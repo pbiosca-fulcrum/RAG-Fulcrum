@@ -5,53 +5,80 @@ body {
     font-family: "Inter", sans-serif;
     background-color: #f7f7f8;
     color: #343541;
-  }
-  
-  .container {
+}
+
+.container {
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
-  }
-  
-  header {
+}
+
+header {
     text-align: center;
     margin-bottom: 40px;
-  }
-  
-  header h1 {
+}
+
+header h1 {
     font-size: 2.5rem;
     margin-bottom: 10px;
-  }
-  
-  header nav a {
+}
+
+header nav a {
     color: #10a37f;
     text-decoration: none;
     margin: 0 10px;
-  }
-  
-  header nav a:hover {
+}
+
+header nav a:hover {
     text-decoration: underline;
-  }
-  
-  header p {
+}
+
+header p {
     font-size: 1rem;
     color: #5c6773;
-  }
-  
-  .logo {
+}
+
+.logo {
     max-width: 150px;
     margin-bottom: 20px;
-  }
-  
-  /* Chat Section */
-  .chat-section {
+}
+
+/* Form Inputs (improved for login/register) */
+.form-group input[type="text"],
+.form-group input[type="password"] {
+    width: 92%;
+    padding: 12px 15px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+}
+
+/* Buttons - globally slightly smaller for login/register */
+.btn {
+    background-color: #10a37f;
+    color: #ffffff;
+    border: none;
+    padding: 8px 16px; /* reduced padding */
+    font-size: 0.95rem; /* slightly smaller font */
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.btn:hover {
+    background-color: #0e8c6c;
+}
+
+/* Chat Section */
+.chat-section {
     background-color: #ffffff;
     border-radius: 8px;
     padding: 20px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  }
-  
-  .conversation {
+}
+
+.conversation {
     max-height: 400px;
     overflow-y: auto;
     border: 1px solid #d1d5db;
@@ -59,112 +86,111 @@ body {
     margin-bottom: 20px;
     background-color: #fff;
     border-radius: 4px;
-  }
-  
-  .message {
+}
+
+.message {
     margin-bottom: 10px;
     padding: 8px;
     border-radius: 4px;
-  }
-  
-  .user-message {
+}
+
+.user-message {
     background-color: #e0f7fa;
     text-align: right;
-  }
-  
-  .bot-message {
+}
+
+.bot-message {
     background-color: #f1f5f9;
     border-left: 4px solid #10a37f;
     text-align: left;
-  }
-  
-  .chat-input {
+}
+
+.chat-input {
     display: flex;
     gap: 10px;
-  }
-  
-  .chat-input input[type="text"] {
+}
+
+.chat-input input[type="text"] {
     flex-grow: 1;
     padding: 10px;
     border: 1px solid #d1d5db;
     border-radius: 4px;
     font-size: 1rem;
-  }
-  
-  .btn {
+}
+
+.btn {
     background-color: #10a37f;
     color: #ffffff;
     border: none;
-    padding: 10px 20px;
-    font-size: 1rem;
+    padding: 8px 16px;
+    font-size: 0.95rem;
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.2s ease;
-  }
-  
-  .btn:hover {
+}
+
+.btn:hover {
     background-color: #0e8c6c;
-  }
-  
-  /* Documents Section */
-  .documents-section ul {
+}
+
+/* Documents Section */
+.documents-section ul {
     list-style: none;
     padding: 0;
-  }
-  
-  .documents-section li {
+}
+
+.documents-section li {
     margin-bottom: 10px;
-  }
-  
-  .documents-section a {
+}
+
+.documents-section a {
     color: #10a37f;
     text-decoration: none;
-  }
-  
-  .documents-section a:hover {
+}
+
+.documents-section a:hover {
     text-decoration: underline;
-  }
-  
-  /* Flashes */
-  .flashes {
+}
+
+/* Flashes */
+.flashes {
     list-style: none;
     padding: 0;
-  }
-  
-  .flashes li {
+}
+
+.flashes li {
     padding: 10px;
     margin-bottom: 10px;
     border-radius: 4px;
-  }
-  
-  .flashes .success {
+}
+
+.flashes .success {
     background-color: #d4edda;
     color: #155724;
-  }
-  
-  .flashes .error {
+}
+
+.flashes .error {
     background-color: #f8d7da;
     color: #721c24;
-  }
-  
-  .flashes .info {
+}
+
+.flashes .info {
     background-color: #d1ecf1;
     color: #0c5460;
-  }
-  
-  /* Error Section */
-  .error-section {
+}
+
+/* Error Section */
+.error-section {
     background-color: #f8d7da;
     border: 1px solid #f5c6cb;
     padding: 20px;
     border-radius: 8px;
     color: #721c24;
-  }
-  
-  /* Horizontal Rule */
-  hr {
+}
+
+/* Horizontal Rule */
+hr {
     border: none;
     border-top: 1px solid #e5e7eb;
     margin: 40px 0;
-  }
-  
+}

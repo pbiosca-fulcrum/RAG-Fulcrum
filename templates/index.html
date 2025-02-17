@@ -21,6 +21,7 @@
       </nav>
       <p>Your interactive retrieval-augmented assistant for Fulcrum Asset Management.</p>
       <button class="btn" onclick="restartChat()">Restart Chat</button>
+      <button class="btn" id="debugToggle" onclick="toggleChatDebug()">Chat Debug: Off</button>
     </header>
     <section class="chat-section">
       <div id="conversation" class="conversation" style="display:none;"></div>
@@ -34,6 +35,17 @@
     // Load conversation from localStorage
     const conversationDiv = document.getElementById("conversation");
     let conversation = JSON.parse(localStorage.getItem("conversation") || "[]");
+    
+    // Chat debug mode from localStorage (default false)
+    let chatDebug = localStorage.getItem("chat_debug") === "true";
+
+    // Update debug button text based on state
+    const debugToggleButton = document.getElementById("debugToggle");
+    function updateDebugButton() {
+      debugToggleButton.innerText = chatDebug ? "Chat Debug: On" : "Chat Debug: Off";
+    }
+    updateDebugButton();
+
     function renderConversation() {
       conversationDiv.innerHTML = "";
       if (conversation.length > 0) {
@@ -64,7 +76,7 @@
       const response = await fetch("/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: question }),
+        body: JSON.stringify({ question: question, debug: chatDebug }),
       });
       const data = await response.json();
       const answerText = data.answer || "Error: No answer received.";
@@ -72,7 +84,21 @@
       renderConversation();
       localStorage.setItem("conversation", JSON.stringify(conversation));
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
+      
+      // If in debug mode and debug_context is provided, log it to the console.
+      if (chatDebug && data.debug_context) {
+        console.log("Debug Context:\n" + data.debug_context);
+      }
     }
+
+    // Add event listener to send message on Enter key
+    const questionInput = document.getElementById("question");
+    questionInput.addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        askQuestion();
+      }
+    });
 
     function restartChat() {
       if (confirm("Are you sure you want to restart the chat? This will clear the conversation history.")) {
@@ -80,6 +106,13 @@
         conversation = [];
         renderConversation();
       }
+    }
+
+    function toggleChatDebug() {
+      chatDebug = !chatDebug;
+      localStorage.setItem("chat_debug", chatDebug);
+      updateDebugButton();
+      alert("Chat debug mode is now " + (chatDebug ? "enabled" : "disabled") + ". In debug mode, additional context information will be logged to the console.");
     }
   </script>
 </body>

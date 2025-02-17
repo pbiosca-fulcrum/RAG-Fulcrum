@@ -13,10 +13,10 @@ def is_disallowed_query(query: str) -> bool:
             return True
     return False
 
-def generate_answer(question: str) -> str:
+def generate_answer(question: str, debug: bool = False):
     if is_disallowed_query(question):
         return "I’m sorry, but I cannot answer that."
-
+    
     results = collection.query(
         query_texts=[question],
         n_results=TOP_K
@@ -25,9 +25,7 @@ def generate_answer(question: str) -> str:
     metadatas = results["metadatas"][0]
     context_text = ""
     for i, (doc_text, meta) in enumerate(zip(docs, metadatas)):
-        # Log the matched chunk for debugging
         print(f"Matched chunk {i+1} for document '{meta.get('title', 'Unknown')}': {doc_text}")
-        # Build a link using the stored relative folder and filename
         link = ""
         if meta.get("folder") and meta.get("filename"):
             link = f" (Original Document: /uploads/{meta['folder']}/{meta['filename']})"
@@ -43,6 +41,8 @@ def generate_answer(question: str) -> str:
         "'I don't have that information. You can ask me about the documents I have access to, such as those related to Fulcrum Asset Management.'"
     )
     user_prompt = f"Question: {question}\n\nContext:\n{context_text}\n\nAnswer:"
+    print(f"System prompt: {system_prompt}")
+    print(f"User prompt: {user_prompt}")
 
     response = client.chat.completions.create(
         model=CHAT_MODEL,
@@ -53,4 +53,8 @@ def generate_answer(question: str) -> str:
         temperature=0.0
     )
     final_answer = response.choices[0].message.content.strip()
-    return final_answer
+    if debug:
+        # In debug mode, return also the context text so the user can see which documents were passed
+        return final_answer, context_text
+    else:
+        return final_answer

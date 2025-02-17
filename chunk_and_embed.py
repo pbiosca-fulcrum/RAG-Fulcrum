@@ -11,7 +11,6 @@ import base64
 from database import collection
 from config import OPENAI_API_KEY, EMBEDDINGS_MODEL, CHAT_MODEL
 
-# Instantiate the new OpenAI client
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 def extract_image_base64(file_path: str) -> str:
@@ -63,8 +62,18 @@ def generate_document_title(file_path: str) -> str:
                     content += el.text + " "
                 if len(content) > 500:
                     break
-        except Exception:
-            content = "Document"
+        except Exception as e:
+            try:
+                from PyPDF2 import PdfReader
+                reader = PdfReader(file_path)
+                extracted_text = ""
+                for page in reader.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        extracted_text += page_text + " "
+                content = extracted_text[:500]
+            except Exception as e2:
+                content = "Document"
     elif ext == ".docx":
         elements = partition_docx(file_path)
         for el in elements:
@@ -93,7 +102,21 @@ def chunk_and_embed_file(file_path: str, doc_id: str, extra_metadata=None):
         try:
             elements = partition_pdf(file_path, infer_table_structure=True)
         except Exception as e:
-            raise Exception("Error processing PDF. Make sure poppler is installed and in PATH. " + str(e))
+            try:
+                from PyPDF2 import PdfReader
+                reader = PdfReader(file_path)
+                extracted_text = ""
+                for page in reader.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        extracted_text += page_text + " "
+                # Create a dummy element with a text attribute
+                class DummyElement:
+                    category = "Text"
+                    text = extracted_text
+                elements = [DummyElement()]
+            except Exception as e2:
+                raise Exception("Error processing PDF using both methods: " + str(e) + " | " + str(e2))
         for el in elements:
             if el.category == "Table":
                 summary = summarize_chunk(el.text, chunk_type="table")
@@ -127,9 +150,20 @@ def chunk_and_embed_file(file_path: str, doc_id: str, extra_metadata=None):
     if extra_metadata is None:
         extra_metadata = {}
 
+    # Log extracted text chunks (showing first 200 characters of each)
+    print(f"Extracted text for document {file_path}:")
+    for i, chunk in enumerate(docs_to_embed):
+        preview = chunk[:200] + ("..." if len(chunk) > 200 else "")
+        print(f"Chunk {i+1}: {preview}")
+
     for content in docs_to_embed:
         if not content.strip():
             continue
+        # Ensure content fits within the token limit for text-embedding-3-large (~8192 tokens, approx 32768 characters)
+        max_chars = 8192 * 4  # rough approximation assuming ~4 characters per token
+        if len(content) > max_chars:
+            print(f"Truncating chunk content from {len(content)} to {max_chars} characters for embedding.")
+            content = content[:max_chars]
         vector = embed_text(content)
         chunk_id = str(uuid.uuid4())
         metadata = {"doc_id": doc_id, "chunk_id": chunk_id}

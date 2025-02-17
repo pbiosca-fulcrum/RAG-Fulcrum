@@ -9,6 +9,7 @@ from flask import (Flask, request, render_template, jsonify,
 from werkzeug.security import generate_password_hash, check_password_hash
 from chunk_and_embed import chunk_and_embed_file, generate_document_title
 from query import generate_answer
+from database import collection, chroma_client, embedding_function
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "this-should-be-changed")  # Use a secure key in production
@@ -73,6 +74,21 @@ def process_document(new_file_path, doc_id, extra_metadata):
     except Exception as e:
         print(f"[{datetime.datetime.utcnow().isoformat()}] Error processing document '{extra_metadata.get('title', 'Unknown')}': {e}")
 
+# --- New Route: Restart Chroma ---
+@app.route("/restart_chroma", methods=["POST"])
+def restart_chroma():
+    # if "user" not in session:
+    #     return jsonify({"error": "Unauthorized"}), 401
+    try:
+        collection.delete()  # Delete existing collection
+        # Re-create the collection with the same embedding function
+        new_collection = chroma_client.get_or_create_collection(name="rag_chunks", embedding_function=embedding_function)
+        flash("Chroma collection has been restarted.", "success")
+        return redirect(url_for("documents"))
+    except Exception as e:
+        flash("Failed to restart Chroma collection: " + str(e), "error")
+        return redirect(url_for("documents"))
+
 # --- Routes ---
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -118,8 +134,6 @@ def index():
         return redirect(url_for("login"))
     return render_template("index.html")
 
-# ... [imports and earlier code remain unchanged] ...
-
 @app.route("/upload_page", methods=["GET", "POST"])
 def upload_page():
     if "user" not in session:
@@ -160,18 +174,16 @@ def upload_page():
             "title": title,
             "uploader": uploader,
             "upload_time": upload_time,
-            "folder": relative_folder,  # store only the relative path
+            "folder": relative_folder,  # store relative folder only
             "filename": new_filename
         }
 
-        # Spawn a background thread to process the document
+        # Inform the user that upload processing is in progress
+        flash(f"Your document '{title}' has been uploaded and is being processed. Please wait...", "info")
         threading.Thread(target=process_document, args=(new_file_path, doc_id, extra_metadata)).start()
 
-        flash(f"Your document '{title}' has been uploaded and is being processed.", "info")
         return redirect(url_for("documents"))
     return render_template("upload.html")
-
-
 
 @app.route("/query", methods=["POST"])
 def query():
@@ -181,8 +193,13 @@ def query():
     if not data or "question" not in data:
         return jsonify({"error": "No question provided"}), 400
     question = data["question"]
-    answer = generate_answer(question)
-    return jsonify({"answer": answer})
+    debug = data.get("debug", False)
+    if debug:
+        answer, debug_context = generate_answer(question, debug=True)
+        return jsonify({"answer": answer, "debug_context": debug_context})
+    else:
+        answer = generate_answer(question, debug=False)
+        return jsonify({"answer": answer})
 
 @app.route("/documents", methods=["GET"])
 def documents():
