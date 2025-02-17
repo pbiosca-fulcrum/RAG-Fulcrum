@@ -7,7 +7,7 @@ import threading
 from flask import (Flask, request, render_template, jsonify,
                    send_from_directory, redirect, url_for, session, flash)
 from werkzeug.security import generate_password_hash, check_password_hash
-from chunk_and_embed import chunk_and_embed_file, generate_document_title
+from chunk_and_embed import chunk_and_embed_file, generate_document_title, embed_text
 from query import generate_answer
 from database import collection, chroma_client, embedding_function
 
@@ -64,7 +64,7 @@ def update_metadata(record):
     with open(METADATA_FILE, "w") as f:
         json.dump(data, f, indent=2)
 
-# --- Background processing ---
+# --- Background processing for document uploads ---
 def process_document(new_file_path, doc_id, extra_metadata):
     try:
         chunk_and_embed_file(new_file_path, doc_id, extra_metadata=extra_metadata)
@@ -77,8 +77,6 @@ def process_document(new_file_path, doc_id, extra_metadata):
 # --- New Route: Restart Chroma ---
 @app.route("/restart_chroma", methods=["POST"])
 def restart_chroma():
-    # if "user" not in session:
-    #     return jsonify({"error": "Unauthorized"}), 401
     try:
         collection.delete()  # Delete existing collection
         # Re-create the collection with the same embedding function
@@ -89,7 +87,7 @@ def restart_chroma():
         flash("Failed to restart Chroma collection: " + str(e), "error")
         return redirect(url_for("documents"))
 
-# --- Routes ---
+# --- User Authentication Routes ---
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -128,6 +126,7 @@ def logout():
     flash("Logged out.", "info")
     return redirect(url_for("login"))
 
+# --- Main Chat and Document Routes ---
 @app.route("/", methods=["GET"])
 def index():
     if "user" not in session:
@@ -178,7 +177,6 @@ def upload_page():
             "filename": new_filename
         }
 
-        # Inform the user that upload processing is in progress
         flash(f"Your document '{title}' has been uploaded and is being processed. Please wait...", "info")
         threading.Thread(target=process_document, args=(new_file_path, doc_id, extra_metadata)).start()
 
@@ -217,6 +215,134 @@ def uploaded_file(filename):
 @app.errorhandler(500)
 def internal_error(error):
     return render_template("error.html", error=error), 500
+
+# --- Wiki Functionality ---
+# Wiki pages are stored in a separate SQLite database for collaboration
+
+WIKI_DB = "wiki.db"
+
+def init_wiki_db():
+    with sqlite3.connect(WIKI_DB) as conn:
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS wiki (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+        """)
+        conn.commit()
+
+init_wiki_db()
+
+def get_all_wiki_pages():
+    with sqlite3.connect(WIKI_DB) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT id, title, updated_at FROM wiki ORDER BY updated_at DESC")
+        rows = cur.fetchall()
+        pages = []
+        for row in rows:
+            pages.append({
+                "id": row[0],
+                "title": row[1],
+                "updated_at": row[2]
+            })
+    return pages
+
+def get_wiki_page(page_id):
+    with sqlite3.connect(WIKI_DB) as conn:
+        cur = conn.cursor()
+        cur.execute("SELECT id, title, content, updated_at FROM wiki WHERE id = ?", (page_id,))
+        row = cur.fetchone()
+        if row:
+            return {
+                "id": row[0],
+                "title": row[1],
+                "content": row[2],
+                "updated_at": row[3]
+            }
+    return None
+
+def save_wiki_page(title, content, page_id=None):
+    now = datetime.datetime.utcnow().isoformat()
+    with sqlite3.connect(WIKI_DB) as conn:
+        cur = conn.cursor()
+        if page_id:
+            cur.execute("UPDATE wiki SET title = ?, content = ?, updated_at = ? WHERE id = ?",
+                        (title, content, now, page_id))
+            conn.commit()
+            return page_id
+        else:
+            cur.execute("INSERT INTO wiki (title, content, updated_at) VALUES (?, ?, ?)",
+                        (title, content, now))
+            conn.commit()
+            return cur.lastrowid
+
+def embed_wiki_page(wiki_id, title, content):
+    vector = embed_text(content)
+    embedding_id = f"wiki-{wiki_id}"
+    try:
+        collection.delete(ids=[embedding_id])
+    except Exception as e:
+        print(f"Warning: could not delete existing wiki embedding: {e}")
+    metadata = {"type": "wiki", "title": title}
+    collection.add(
+        documents=[content],
+        embeddings=[vector],
+        ids=[embedding_id],
+        metadatas=[metadata]
+    )
+    print(f"Wiki page '{title}' (ID: {wiki_id}) embedded successfully.")
+
+@app.route("/wiki")
+def wiki_list():
+    if "user" not in session:
+        return redirect(url_for("login"))
+    pages = get_all_wiki_pages()
+    return render_template("wiki_list.html", pages=pages)
+
+@app.route("/wiki/view/<int:page_id>")
+def wiki_view(page_id):
+    if "user" not in session:
+        return redirect(url_for("login"))
+    page = get_wiki_page(page_id)
+    if not page:
+        flash("Wiki page not found.", "error")
+        return redirect(url_for("wiki_list"))
+    return render_template("wiki_view.html", page=page)
+
+@app.route("/wiki/edit/<int:page_id>")
+def wiki_edit(page_id):
+    if "user" not in session:
+        return redirect(url_for("login"))
+    page = get_wiki_page(page_id)
+    if not page:
+        flash("Wiki page not found.", "error")
+        return redirect(url_for("wiki_list"))
+    return render_template("wiki_edit.html", page=page)
+
+@app.route("/wiki/new")
+def wiki_new():
+    if "user" not in session:
+        return redirect(url_for("login"))
+    page = {"id": None, "title": "", "content": ""}
+    return render_template("wiki_edit.html", page=page)
+
+@app.route("/wiki/save", methods=["POST"])
+def wiki_save():
+    if "user" not in session:
+        return redirect(url_for("login"))
+    title = request.form.get("title").strip()
+    content = request.form.get("content").strip()
+    page_id = request.form.get("id")
+    if not title or not content:
+        flash("Title and content cannot be empty.", "error")
+        return redirect(url_for("wiki_new") if not page_id else url_for("wiki_edit", page_id=page_id))
+    saved_page_id = save_wiki_page(title, content, page_id)
+    embed_wiki_page(saved_page_id, title, content)
+    flash("Wiki page saved and embedded successfully.", "success")
+    return redirect(url_for("wiki_view", page_id=saved_page_id))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5782, debug=True)
