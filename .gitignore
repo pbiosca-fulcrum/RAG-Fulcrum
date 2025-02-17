@@ -1,0 +1,23 @@
+# Dependency directories
+node_modules/
+vendor/
+.venv/
+
+# Build directories
+dist/
+build/
+out/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment files
+.env
+
+venv/*
+
+prompt_chatgpt.py

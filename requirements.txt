@@ -1,0 +1,13 @@
+flask
+python-dotenv
+openai
+unstructured
+pillow
+python-magic
+pypdf
+tiktoken
+chromadb
+PyPDF2
+docx2txt
+pandas
+xlrd

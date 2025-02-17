@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple RAG Example</title>
+</head>
+<body>
+    <h1>Upload a Document</h1>
+    <form action="/upload" method="POST" enctype="multipart/form-data">
+        <input type="file" name="document" accept=".pdf,.txt,.docx,.xlsx,.png,.jpg,.jpeg"/>
+        <button type="submit">Upload</button>
+    </form>
+    <hr/>
+    <h2>Ask a Question</h2>
+    <input id="question" type="text" size="80" placeholder="Type your question..."/>
+    <button onclick="askQuestion()">Ask</button>
+    <p>Answer: <span id="answer"></span></p>
+    <script>
+    async function askQuestion() {
+        const question = document.getElementById("question").value;
+        const response = await fetch("/query", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ question: question })
+        });
+        const data = await response.json();
+        document.getElementById("answer").innerText = data.answer;
+    }
+    </script>
+</body>
+</html>
