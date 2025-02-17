@@ -20,6 +20,7 @@
         <a href="/logout">Logout</a>
       </nav>
       <p>Your interactive retrieval-augmented assistant for Fulcrum Asset Management.</p>
+      <button class="btn" onclick="restartChat()">Restart Chat</button>
     </header>
     <section class="chat-section">
       <div id="conversation" class="conversation" style="display:none;"></div>
@@ -71,6 +72,14 @@
       renderConversation();
       localStorage.setItem("conversation", JSON.stringify(conversation));
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
+    }
+
+    function restartChat() {
+      if (confirm("Are you sure you want to restart the chat? This will clear the conversation history.")) {
+        localStorage.removeItem("conversation");
+        conversation = [];
+        renderConversation();
+      }
     }
   </script>
 </body>

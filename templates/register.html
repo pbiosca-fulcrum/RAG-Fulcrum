@@ -6,11 +6,25 @@
   <title>Register - TheFulcrum's Chat</title>
   <link rel="stylesheet" href="/static/style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    .register-card {
+      max-width: 400px;
+      margin: 100px auto;
+      padding: 30px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      background-color: #ffffff;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .register-card h1 {
+      margin-bottom: 20px;
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
+  <div class="register-card">
     <header>
-      <img src="/static/logo.png" alt="Logo" class="logo" />
+      <img src="/static/logo.png" alt="Logo" class="logo" style="max-width:100px; display:block; margin:0 auto 20px;"/>
       <h1>Register</h1>
     </header>
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -33,7 +47,7 @@
       </div>
       <button type="submit" class="btn">Register</button>
     </form>
-    <p>Already have an account? <a href="/login">Login here</a>.</p>
+    <p style="text-align:center;">Already have an account? <a href="/login">Login here</a>.</p>
   </div>
 </body>
 </html>

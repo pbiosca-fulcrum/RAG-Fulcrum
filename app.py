@@ -3,6 +3,7 @@ import uuid
 import datetime
 import json
 import sqlite3
+import threading
 from flask import (Flask, request, render_template, jsonify,
                    send_from_directory, redirect, url_for, session, flash)
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -62,8 +63,17 @@ def update_metadata(record):
     with open(METADATA_FILE, "w") as f:
         json.dump(data, f, indent=2)
 
-# --- Routes ---
+# --- Background processing ---
+def process_document(new_file_path, doc_id, extra_metadata):
+    try:
+        chunk_and_embed_file(new_file_path, doc_id, extra_metadata=extra_metadata)
+        update_metadata(extra_metadata)
+        # Log which text snippets have been processed (for debugging)
+        print(f"[{datetime.datetime.utcnow().isoformat()}] Document '{extra_metadata['title']}' processed. Metadata: {extra_metadata}")
+    except Exception as e:
+        print(f"[{datetime.datetime.utcnow().isoformat()}] Error processing document '{extra_metadata.get('title', 'Unknown')}': {e}")
 
+# --- Routes ---
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
@@ -108,7 +118,8 @@ def index():
         return redirect(url_for("login"))
     return render_template("index.html")
 
-# New upload page route
+# ... [imports and earlier code remain unchanged] ...
+
 @app.route("/upload_page", methods=["GET", "POST"])
 def upload_page():
     if "user" not in session:
@@ -119,9 +130,10 @@ def upload_page():
             flash("No file uploaded.", "error")
             return redirect(url_for("upload_page"))
 
-        # Create folder structure based on current UTC date: uploads/YYYY/MM
         now = datetime.datetime.utcnow()
-        folder = os.path.join(UPLOAD_FOLDER, now.strftime("%Y"), now.strftime("%m"))
+        # Create folder structure based on current UTC date: uploads/YYYY/MM
+        relative_folder = os.path.join(now.strftime("%Y"), now.strftime("%m"))
+        folder = os.path.join(UPLOAD_FOLDER, relative_folder)
         os.makedirs(folder, exist_ok=True)
 
         temp_filename = str(uuid.uuid4()) + "_" + file.filename
@@ -142,25 +154,24 @@ def upload_page():
 
         doc_id = str(uuid.uuid4())
         uploader = session.get("user", "unknown")
-        upload_time = now.isoformat()
+        # Only display HH:MM for upload time
+        upload_time = now.strftime("%H:%M")
         extra_metadata = {
             "title": title,
             "uploader": uploader,
             "upload_time": upload_time,
-            "folder": folder,
+            "folder": relative_folder,  # store only the relative path
             "filename": new_filename
         }
 
-        try:
-            chunk_and_embed_file(new_file_path, doc_id, extra_metadata=extra_metadata)
-        except Exception as e:
-            flash("Error processing document: " + str(e), "error")
-            return redirect(url_for("upload_page"))
+        # Spawn a background thread to process the document
+        threading.Thread(target=process_document, args=(new_file_path, doc_id, extra_metadata)).start()
 
-        update_metadata(extra_metadata)
-        flash(f"Uploaded and processed document titled '{title}'.", "success")
+        flash(f"Your document '{title}' has been uploaded and is being processed.", "info")
         return redirect(url_for("documents"))
     return render_template("upload.html")
+
+
 
 @app.route("/query", methods=["POST"])
 def query():
@@ -177,7 +188,6 @@ def query():
 def documents():
     if "user" not in session:
         return redirect(url_for("login"))
-    # Load metadata and sort descending by upload_time
     with open(METADATA_FILE, "r") as f:
         docs = json.load(f)
     docs = sorted(docs, key=lambda x: x.get("upload_time", ""), reverse=True)
