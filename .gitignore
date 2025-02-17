@@ -20,4 +20,7 @@ Thumbs.db
 
 venv/*
 
+__pycache__/*
+
 prompt_chatgpt.py
+combined_python_files.txt

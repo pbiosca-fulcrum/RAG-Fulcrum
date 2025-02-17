@@ -23,7 +23,7 @@ def upload():
     file_path = os.path.join(UPLOAD_FOLDER, filename)
     file.save(file_path)
 
-    # Process it: chunk & embed
+    # Process the file: chunk & embed
     chunk_and_embed_file(file_path, doc_id)
 
     return f"Uploaded and processed document with ID: {doc_id}"

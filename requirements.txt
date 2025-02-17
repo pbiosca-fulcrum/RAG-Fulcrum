@@ -11,3 +11,11 @@ PyPDF2
 docx2txt
 pandas
 xlrd
+networkx
+numpy
+wrapt
+pdfminer.six
+pi-heif
+unstructured_inference
+typing-extensions
+docx
