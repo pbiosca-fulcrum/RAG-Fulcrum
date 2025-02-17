@@ -48,6 +48,58 @@
     ul li {
       margin-bottom: 10px;
     }
+    /* Folder grouping for Wiki toggles */
+    .folder-header {
+      cursor: pointer;
+      background-color: #e8f5f2;
+      padding: 10px;
+      margin-bottom: 5px;
+      border-radius: 4px;
+      font-weight: bold;
+      color: #0e8c6c;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .folder-content {
+      display: none;
+      margin-left: 20px;
+      margin-bottom: 20px;
+    }
+    .wiki-item {
+      margin-bottom: 10px;
+      border-left: 3px solid #10a37f;
+      padding-left: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .wiki-buttons {
+      text-align: right;
+      margin-left: 10px;
+    }
+    .document-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .document-buttons {
+      margin-left: 10px;
+      text-align: right;
+    }
+    /* Make the file input more appealing */
+    input[type="file"] {
+      display: inline-block;
+      cursor: pointer;
+      padding: 8px;
+      border: 2px dashed #10a37f;
+      background-color: #f1f5f9;
+      border-radius: 6px;
+      margin-bottom: 15px;
+    }
+    input[type="file"]:hover {
+      background-color: #e7f3f0;
+    }
   </style>
 </head>
 <body>
@@ -62,11 +114,16 @@
       </nav>
     </header>
 
-    <!-- Tabs -->
+    <p style="text-align:center; font-size:1.1rem; color:#555;">
+      This chat becomes more powerful with every new piece of knowledge you add. 
+      Keep uploading documents or creating wiki pages to help it learn and serve you better!
+    </p>
+
+    <!-- Tabs (new order: Documents, Add Document, Wiki Pages, New Wiki Page) -->
     <div class="tab-container">
       <div class="tab active" data-tab="docs-tab">Documents</div>
-      <div class="tab" data-tab="wiki-tab">Wiki Pages</div>
       <div class="tab" data-tab="upload-tab">Add Document</div>
+      <div class="tab" data-tab="wiki-tab">Wiki Pages</div>
       <div class="tab" data-tab="wiki-new-tab">New Wiki Page</div>
     </div>
 
@@ -76,10 +133,17 @@
       {% if docs %}
         <ul>
           {% for doc in docs %}
-          <li>
-            <strong>{{ doc.title }}</strong><br>
-            Uploaded by {{ doc.uploader }} at {{ doc.upload_time }}<br>
-            <a href="/uploads/{{ doc.folder | replace('uploads/', '') }}/{{ doc.filename }}" target="_blank">View Document</a>
+          <li class="document-item">
+            <div>
+              <strong>{{ doc.title }}</strong><br>
+              Uploaded by {{ doc.uploader }} at {{ doc.upload_time }}<br>
+              <a href="/uploads/{{ doc.folder | replace('uploads/', '') }}/{{ doc.filename }}" target="_blank">View Document</a>
+            </div>
+            <div class="document-buttons">
+              <form action="/document/delete/{{ doc.get('doc_id') }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this document?');">
+                <button class="btn" type="submit">Delete</button>
+              </form>
+            </div>
           </li>
           {% endfor %}
         </ul>
@@ -88,38 +152,61 @@
       {% endif %}
     </div>
 
-    <!-- Wiki tab content -->
-    <div id="wiki-tab" class="tab-content">
-      <h2 class="subsection-title">Wiki Pages</h2>
-      {% if pages %}
-        <ul>
-          {% for page in pages %}
-          <li>
-            <a href="/wiki/view/{{ page.id }}"><strong>{{ page.title }}</strong></a>
-            {% if page.folder %}
-              <em>[{{ page.folder }}]</em>
-            {% endif %}
-            <br>
-            Last updated: {{ page.updated_at }}
-            <a href="/wiki/edit/{{ page.id }}" class="btn">Edit</a>
-          </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p>No wiki pages found. You can create one from the "New Wiki Page" tab.</p>
-      {% endif %}
-    </div>
-
     <!-- Add Document tab content -->
     <div id="upload-tab" class="tab-content">
       <h2 class="subsection-title">Upload a New Document</h2>
       <form action="/upload_page" method="post" enctype="multipart/form-data">
         <div class="form-group">
-          <label for="document">Select Document:</label>
+          <label for="document">Select Document:</label><br>
           <input type="file" name="document" id="document" accept=".pdf,.txt,.docx,.xlsx,.png,.jpg,.jpeg" required/>
         </div>
         <button type="submit" class="btn" id="uploadBtn">Upload Document</button>
       </form>
+    </div>
+
+    <!-- Wiki tab content -->
+    <div id="wiki-tab" class="tab-content">
+      <h2 class="subsection-title">Wiki Pages</h2>
+      {% if pages %}
+        {% set folder_groups = {} %}
+        {% for page in pages %}
+          {% set folder_val = page.folder if page.folder else "Uncategorized" %}
+          {% if folder_val not in folder_groups %}
+            {% set _ = folder_groups.update({folder_val: []}) %}
+          {% endif %}
+          {% set _ = folder_groups[folder_val].append(page) %}
+        {% endfor %}
+
+        <!-- Now display by folder, collapsible sections -->
+        {% for folder_val, group_pages in folder_groups.items() %}
+          {% set folder_id = folder_val|replace(' ', '_')|lower %}
+          <div class="folder-header" onclick="toggleFolder('{{folder_id}}')">
+            <span>{{ folder_val }}</span>
+            <span>▼</span>
+          </div>
+          <div id="{{folder_id}}" class="folder-content">
+            <ul>
+              {% for page in group_pages %}
+              <li class="wiki-item">
+                <div>
+                  <a href="/wiki/view/{{ page.id }}"><strong>{{ page.title }}</strong></a><br>
+                  Last updated: {{ page.updated_at }}
+                </div>
+                <div class="wiki-buttons">
+                  <form action="/wiki/delete/{{ page.id }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this Wiki page?');">
+                    <button class="btn" type="submit">Delete</button>
+                  </form>
+                  <br>
+                  <a href="/wiki/edit/{{ page.id }}" class="btn" style="margin-top:6px;">Edit</a>
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p>No wiki pages found. You can create one from the "New Wiki Page" tab.</p>
+      {% endif %}
     </div>
 
     <!-- New Wiki Page tab content -->
@@ -130,6 +217,14 @@
           <label for="title">Title:</label>
           <input type="text" name="title" id="title" required>
         </div>
+        <!-- If 'all_folders' is passed in, show a dropdown or list of existing ones -->
+        {% if all_folders is defined and all_folders %}
+          <p>Existing categories (click to auto-fill): 
+            {% for f in all_folders %}
+              <button type="button" class="btn" style="margin:2px;" onclick="document.getElementById('folder').value='{{f}}'">{{f}}</button>
+            {% endfor %}
+          </p>
+        {% endif %}
         <div class="form-group">
           <label for="folder">Folder / Topic (optional):</label>
           <input type="text" name="folder" id="folder">
@@ -164,6 +259,16 @@
         }
       });
     });
+
+    // Collapsible wiki folder groups
+    function toggleFolder(folderId) {
+      const folderContent = document.getElementById(folderId);
+      if (folderContent.style.display === "none" || folderContent.style.display === "") {
+        folderContent.style.display = "block";
+      } else {
+        folderContent.style.display = "none";
+      }
+    }
   </script>
 </body>
 </html>

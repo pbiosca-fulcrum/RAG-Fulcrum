@@ -23,6 +23,13 @@
       font-size: 1rem;
       margin-bottom: 15px;
     }
+    .folder-list {
+      margin-bottom: 10px;
+    }
+    .folder-list button {
+      margin: 2px;
+      font-size: 0.8rem;
+    }
   </style>
 </head>
 <body>
@@ -37,6 +44,14 @@
       </nav>
     </header>
     <section>
+      {% if all_folders is defined and all_folders %}
+        <div class="folder-list">
+          <strong>Existing Folders:</strong>
+          {% for f in all_folders %}
+            <button type="button" class="btn" onclick="document.getElementById('folder').value='{{f}}'">{{f}}</button>
+          {% endfor %}
+        </div>
+      {% endif %}
       <form action="/wiki/save" method="post">
         {% if page.id %}
           <input type="hidden" name="id" value="{{ page.id }}">

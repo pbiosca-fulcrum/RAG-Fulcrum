@@ -4,6 +4,11 @@ import datetime
 import json
 import sqlite3
 import threading
+import markdown
+import pandas as pd
+
+from markupsafe import Markup
+
 from flask import (
     Flask, request, render_template, jsonify,
     send_from_directory, redirect, url_for, session, flash
@@ -66,10 +71,19 @@ def update_metadata(record):
     with open(METADATA_FILE, "w") as f:
         json.dump(data, f, indent=2)
 
+def remove_metadata(doc_id):
+    """Remove a document record from metadata.json by doc_id."""
+    with open(METADATA_FILE, "r") as f:
+        data = json.load(f)
+    updated_data = [d for d in data if not (d.get("doc_id") == doc_id)]
+    with open(METADATA_FILE, "w") as f:
+        json.dump(updated_data, f, indent=2)
+
 # --- Background processing for document uploads ---
 def process_document(new_file_path, doc_id, extra_metadata):
     try:
         chunk_and_embed_file(new_file_path, doc_id, extra_metadata=extra_metadata)
+        extra_metadata["doc_id"] = doc_id  # store doc_id so we can remove it later if needed
         update_metadata(extra_metadata)
         # Log which text snippets have been processed (for debugging)
         print(f"[{datetime.datetime.utcnow().isoformat()}] Document '{extra_metadata['title']}' processed. Metadata: {extra_metadata}")
@@ -87,6 +101,29 @@ def restart_chroma():
         return redirect(url_for("knowledge"))
     except Exception as e:
         flash("Failed to restart Chroma collection: " + str(e), "error")
+        return redirect(url_for("knowledge"))
+
+# --- Document Delete ---
+@app.route("/document/delete/<doc_id>", methods=["POST"])
+def document_delete(doc_id):
+    if "user" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    # Remove from vector store
+    try:
+        # Find all chunks that match doc_id
+        # We can't do a direct 'delete' by doc_id unless we stored them with an ID reference.
+        # But we stored chunk_id, so let's search by metadata:
+        # This approach is a bit naive, but let's do it:
+        results = collection.get(where={"doc_id": doc_id})
+        if results and "ids" in results:
+            to_delete = results["ids"]
+            collection.delete(ids=to_delete)
+        # Remove from metadata
+        remove_metadata(doc_id)
+        flash("Document deleted successfully.", "success")
+        return redirect(url_for("knowledge"))
+    except Exception as e:
+        flash("Failed to delete document: " + str(e), "error")
         return redirect(url_for("knowledge"))
 
 # --- User Authentication Routes ---
@@ -311,6 +348,8 @@ def wiki_view(page_id):
     if not page:
         flash("Wiki page not found.", "error")
         return redirect(url_for("knowledge"))
+    # Render the wiki content as Markdown -> HTML
+    page["content_html"] = Markup(markdown.markdown(page["content"]))
     return render_template("wiki_view.html", page=page)
 
 @app.route("/wiki/edit/<int:page_id>")
@@ -327,8 +366,11 @@ def wiki_edit(page_id):
 def wiki_new():
     if "user" not in session:
         return redirect(url_for("login"))
+    # We also fetch existing folders for display
+    existing_pages = get_all_wiki_pages()
+    existing_folders = set([p["folder"] for p in existing_pages if p["folder"]])
     page = {"id": None, "title": "", "content": "", "folder": ""}
-    return render_template("wiki_edit.html", page=page)
+    return render_template("wiki_edit.html", page=page, all_folders=existing_folders)
 
 @app.route("/wiki/save", methods=["POST"])
 def wiki_save():
@@ -345,6 +387,29 @@ def wiki_save():
     embed_wiki_page(saved_page_id, title, content)
     flash("Wiki page saved and embedded successfully.", "success")
     return redirect(url_for("wiki_view", page_id=saved_page_id))
+
+@app.route("/wiki/delete/<int:page_id>", methods=["POST"])
+def wiki_delete(page_id):
+    if "user" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    # Delete from DB and from vector store
+    page = get_wiki_page(page_id)
+    if not page:
+        flash("Wiki page not found.", "error")
+        return redirect(url_for("knowledge"))
+    embedding_id = f"wiki-{page_id}"
+    try:
+        collection.delete(ids=[embedding_id])
+    except Exception as e:
+        print(f"Warning: could not delete existing wiki embedding: {e}")
+
+    with sqlite3.connect(WIKI_DB) as conn:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM wiki WHERE id = ?", (page_id,))
+        conn.commit()
+
+    flash(f"Wiki page '{page['title']}' deleted successfully.", "success")
+    return redirect(url_for("knowledge"))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5782, debug=True)

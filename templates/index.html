@@ -26,7 +26,7 @@
       <!-- Conversation area -->
       <div id="conversation" class="conversation" style="display:none;"></div>
       <!-- Placeholder area shown only if no conversation yet -->
-      <div id="empty-placeholder" style="text-align:center; color:#555; font-style:italic;">
+      <div id="empty-placeholder" style="text-align:center; color:#555; font-style:italic; margin-bottom:30px;">
         What can I help you with?
       </div>
       <div class="chat-input">
@@ -59,7 +59,13 @@
         conversation.forEach(msg => {
           const div = document.createElement("div");
           div.className = "message " + (msg.sender === "user" ? "user-message" : "bot-message");
-          div.innerText = (msg.sender === "user" ? "You: " : "TheFulcrum's Chat: ") + msg.text;
+          // For user messages, use textContent for safety
+          if (msg.sender === "user") {
+            div.textContent = "You: " + msg.text;
+          } else {
+            // For bot messages, set innerHTML so links are clickable
+            div.innerHTML = "TheFulcrum's Chat: " + msg.text;
+          }
           conversationDiv.appendChild(div);
         });
       } else {
