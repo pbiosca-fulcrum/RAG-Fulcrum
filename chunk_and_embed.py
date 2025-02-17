@@ -7,6 +7,8 @@ from unstructured.partition.docx import partition_docx
 from unstructured.partition.text import partition_text
 from unstructured.partition.xlsx import partition_xlsx
 import base64
+from PIL import Image
+import io
 
 from database import collection
 from config import OPENAI_API_KEY, EMBEDDINGS_MODEL, CHAT_MODEL
@@ -14,9 +16,20 @@ from config import OPENAI_API_KEY, EMBEDDINGS_MODEL, CHAT_MODEL
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 def extract_image_base64(file_path: str) -> str:
-    with open(file_path, "rb") as f:
-        data = f.read()
-    return base64.b64encode(data).decode('utf-8')
+    """Extracts image as reduced-resolution base64 to avoid huge tokens."""
+    try:
+        img = Image.open(file_path)
+        # Resize to max 400px, maintaining aspect ratio
+        img.thumbnail((400, 400))
+        buffer = io.BytesIO()
+        # Save as JPEG with moderate quality
+        img.save(buffer, format="JPEG", quality=50)
+        return base64.b64encode(buffer.getvalue()).decode('utf-8')
+    except Exception as e:
+        # Fallback: just read raw bytes if PIL fails
+        with open(file_path, "rb") as f:
+            data = f.read()
+        return base64.b64encode(data).decode('utf-8')
 
 def summarize_chunk(content: str, chunk_type="text") -> str:
     if chunk_type == "text":
@@ -24,9 +37,11 @@ def summarize_chunk(content: str, chunk_type="text") -> str:
     elif chunk_type == "table":
         prompt = f"Summarize the following table:\n{content}"
     elif chunk_type == "image":
-        prompt = ("You are an assistant that can interpret images from textual descriptions.\n"
-                  "This is the base64 content of an image from a user document. Summarize or "
-                  "describe what it contains in detail:\n" + content)
+        prompt = (
+            "You are an assistant that can interpret images from textual descriptions.\n"
+            "Below is the base64 content of an image from a user document. Summarize or "
+            "describe what it contains in a concise manner:\n" + content
+        )
     else:
         prompt = f"Summarize:\n{content}"
 
@@ -56,13 +71,22 @@ def generate_document_title(file_path: str) -> str:
             content = f.read(500)
     elif ext == ".pdf":
         try:
-            elements = partition_pdf(file_path, infer_table_structure=True)
+            # Increase chunk size parameters for bigger segments
+            elements = partition_pdf(
+                file_path, 
+                infer_table_structure=True, 
+                strategy="hi_res",
+                max_characters=10000,
+                combine_text_under_n_chars=5000,
+                new_after_n_chars=8000
+            )
             for el in elements:
                 if el.text.strip():
                     content += el.text + " "
                 if len(content) > 500:
                     break
         except Exception as e:
+            # Fallback with PyPDF2
             try:
                 from PyPDF2 import PdfReader
                 reader = PdfReader(file_path)
@@ -72,7 +96,7 @@ def generate_document_title(file_path: str) -> str:
                     if page_text:
                         extracted_text += page_text + " "
                 content = extracted_text[:500]
-            except Exception as e2:
+            except Exception:
                 content = "Document"
     elif ext == ".docx":
         elements = partition_docx(file_path)
@@ -98,10 +122,19 @@ def generate_document_title(file_path: str) -> str:
 def chunk_and_embed_file(file_path: str, doc_id: str, extra_metadata=None):
     file_ext = os.path.splitext(file_path)[1].lower()
     docs_to_embed = []
+
     if file_ext == ".pdf":
         try:
-            elements = partition_pdf(file_path, infer_table_structure=True)
+            elements = partition_pdf(
+                file_path, 
+                infer_table_structure=True,
+                strategy="hi_res",
+                max_characters=10000,
+                combine_text_under_n_chars=5000,
+                new_after_n_chars=8000
+            )
         except Exception as e:
+            # Fallback with PyPDF2
             try:
                 from PyPDF2 import PdfReader
                 reader = PdfReader(file_path)
@@ -110,7 +143,6 @@ def chunk_and_embed_file(file_path: str, doc_id: str, extra_metadata=None):
                     page_text = page.extract_text()
                     if page_text:
                         extracted_text += page_text + " "
-                # Create a dummy element with a text attribute
                 class DummyElement:
                     category = "Text"
                     text = extracted_text
@@ -122,14 +154,17 @@ def chunk_and_embed_file(file_path: str, doc_id: str, extra_metadata=None):
                 summary = summarize_chunk(el.text, chunk_type="table")
                 docs_to_embed.append(summary)
             elif el.category == "Image":
-                # Optional image handling could be added here.
-                pass
+                # For PDF images, no direct raw file path, so ignoring or advanced extraction needed.
+                # If needed, we could do advanced logic. For now, skip.
+                continue
             else:
                 docs_to_embed.append(el.text)
+
     elif file_ext == ".docx":
         elements = partition_docx(file_path)
         for el in elements:
             docs_to_embed.append(el.text)
+
     elif file_ext == ".xlsx":
         elements = partition_xlsx(file_path)
         for el in elements:
@@ -138,10 +173,12 @@ def chunk_and_embed_file(file_path: str, doc_id: str, extra_metadata=None):
                 docs_to_embed.append(summary)
             else:
                 docs_to_embed.append(el.text)
+
     elif file_ext == ".txt":
         elements = partition_text(file_path)
         for el in elements:
             docs_to_embed.append(el.text)
+
     elif file_ext in [".png", ".jpg", ".jpeg"]:
         b64_str = extract_image_base64(file_path)
         summary = summarize_chunk(b64_str, chunk_type="image")
@@ -159,8 +196,8 @@ def chunk_and_embed_file(file_path: str, doc_id: str, extra_metadata=None):
     for content in docs_to_embed:
         if not content.strip():
             continue
-        # Ensure content fits within the token limit for text-embedding-3-large (~8192 tokens, approx 32768 characters)
-        max_chars = 8192 * 4  # rough approximation assuming ~4 characters per token
+        # Ensure content fits within an approximate token limit for the embedding model
+        max_chars = 8192 * 4  # rough approximation
         if len(content) > max_chars:
             print(f"Truncating chunk content from {len(content)} to {max_chars} characters for embedding.")
             content = content[:max_chars]

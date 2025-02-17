@@ -4,8 +4,10 @@ import datetime
 import json
 import sqlite3
 import threading
-from flask import (Flask, request, render_template, jsonify,
-                   send_from_directory, redirect, url_for, session, flash)
+from flask import (
+    Flask, request, render_template, jsonify,
+    send_from_directory, redirect, url_for, session, flash
+)
 from werkzeug.security import generate_password_hash, check_password_hash
 from chunk_and_embed import chunk_and_embed_file, generate_document_title, embed_text
 from query import generate_answer
@@ -82,10 +84,10 @@ def restart_chroma():
         # Re-create the collection with the same embedding function
         new_collection = chroma_client.get_or_create_collection(name="rag_chunks", embedding_function=embedding_function)
         flash("Chroma collection has been restarted.", "success")
-        return redirect(url_for("documents"))
+        return redirect(url_for("knowledge"))
     except Exception as e:
         flash("Failed to restart Chroma collection: " + str(e), "error")
-        return redirect(url_for("documents"))
+        return redirect(url_for("knowledge"))
 
 # --- User Authentication Routes ---
 @app.route("/register", methods=["GET", "POST"])
@@ -126,13 +128,43 @@ def logout():
     flash("Logged out.", "info")
     return redirect(url_for("login"))
 
-# --- Main Chat and Document Routes ---
+# --- Main Chat Route ---
 @app.route("/", methods=["GET"])
 def index():
     if "user" not in session:
         return redirect(url_for("login"))
     return render_template("index.html")
 
+@app.route("/query", methods=["POST"])
+def query():
+    if "user" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    if not data or "question" not in data:
+        return jsonify({"error": "No question provided"}), 400
+    question = data["question"]
+    debug = data.get("debug", False)
+    if debug:
+        answer, debug_context = generate_answer(question, debug=True)
+        return jsonify({"answer": answer, "debug_context": debug_context})
+    else:
+        answer = generate_answer(question, debug=False)
+        return jsonify({"answer": answer})
+
+# --- Unified Knowledge Page (Documents + Wiki) ---
+@app.route("/knowledge")
+def knowledge():
+    if "user" not in session:
+        return redirect(url_for("login"))
+    # Get documents
+    with open(METADATA_FILE, "r") as f:
+        docs = json.load(f)
+    docs = sorted(docs, key=lambda x: x.get("upload_time", ""), reverse=True)
+    # Get wiki pages
+    pages = get_all_wiki_pages()
+    return render_template("knowledge.html", docs=docs, pages=pages)
+
+# --- Document Upload (same route, but now linked from knowledge page) ---
 @app.route("/upload_page", methods=["GET", "POST"])
 def upload_page():
     if "user" not in session:
@@ -141,7 +173,7 @@ def upload_page():
         file = request.files.get("document")
         if not file:
             flash("No file uploaded.", "error")
-            return redirect(url_for("upload_page"))
+            return redirect(url_for("knowledge"))
 
         now = datetime.datetime.utcnow()
         # Create folder structure based on current UTC date: uploads/YYYY/MM
@@ -155,7 +187,7 @@ def upload_page():
 
         try:
             title = generate_document_title(temp_file_path)
-        except Exception as e:
+        except Exception:
             title = file.filename  # fallback
 
         import re
@@ -180,33 +212,8 @@ def upload_page():
         flash(f"Your document '{title}' has been uploaded and is being processed. Please wait...", "info")
         threading.Thread(target=process_document, args=(new_file_path, doc_id, extra_metadata)).start()
 
-        return redirect(url_for("documents"))
+        return redirect(url_for("knowledge"))
     return render_template("upload.html")
-
-@app.route("/query", methods=["POST"])
-def query():
-    if "user" not in session:
-        return jsonify({"error": "Unauthorized"}), 401
-    data = request.json
-    if not data or "question" not in data:
-        return jsonify({"error": "No question provided"}), 400
-    question = data["question"]
-    debug = data.get("debug", False)
-    if debug:
-        answer, debug_context = generate_answer(question, debug=True)
-        return jsonify({"answer": answer, "debug_context": debug_context})
-    else:
-        answer = generate_answer(question, debug=False)
-        return jsonify({"answer": answer})
-
-@app.route("/documents", methods=["GET"])
-def documents():
-    if "user" not in session:
-        return redirect(url_for("login"))
-    with open(METADATA_FILE, "r") as f:
-        docs = json.load(f)
-    docs = sorted(docs, key=lambda x: x.get("upload_time", ""), reverse=True)
-    return render_template("documents.html", docs=docs)
 
 @app.route("/uploads/<path:filename>")
 def uploaded_file(filename):
@@ -217,8 +224,6 @@ def internal_error(error):
     return render_template("error.html", error=error), 500
 
 # --- Wiki Functionality ---
-# Wiki pages are stored in a separate SQLite database for collaboration
-
 WIKI_DB = "wiki.db"
 
 def init_wiki_db():
@@ -229,6 +234,7 @@ def init_wiki_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
                 content TEXT NOT NULL,
+                folder TEXT DEFAULT '',
                 updated_at TEXT NOT NULL
             )
         """)
@@ -239,43 +245,45 @@ init_wiki_db()
 def get_all_wiki_pages():
     with sqlite3.connect(WIKI_DB) as conn:
         cur = conn.cursor()
-        cur.execute("SELECT id, title, updated_at FROM wiki ORDER BY updated_at DESC")
+        cur.execute("SELECT id, title, folder, updated_at FROM wiki ORDER BY updated_at DESC")
         rows = cur.fetchall()
         pages = []
         for row in rows:
             pages.append({
                 "id": row[0],
                 "title": row[1],
-                "updated_at": row[2]
+                "folder": row[2],
+                "updated_at": row[3]
             })
     return pages
 
 def get_wiki_page(page_id):
     with sqlite3.connect(WIKI_DB) as conn:
         cur = conn.cursor()
-        cur.execute("SELECT id, title, content, updated_at FROM wiki WHERE id = ?", (page_id,))
+        cur.execute("SELECT id, title, content, folder, updated_at FROM wiki WHERE id = ?", (page_id,))
         row = cur.fetchone()
         if row:
             return {
                 "id": row[0],
                 "title": row[1],
                 "content": row[2],
-                "updated_at": row[3]
+                "folder": row[3],
+                "updated_at": row[4]
             }
     return None
 
-def save_wiki_page(title, content, page_id=None):
-    now = datetime.datetime.utcnow().isoformat()
+def save_wiki_page(title, content, folder, page_id=None):
+    now = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M")
     with sqlite3.connect(WIKI_DB) as conn:
         cur = conn.cursor()
         if page_id:
-            cur.execute("UPDATE wiki SET title = ?, content = ?, updated_at = ? WHERE id = ?",
-                        (title, content, now, page_id))
+            cur.execute("UPDATE wiki SET title = ?, content = ?, folder = ?, updated_at = ? WHERE id = ?",
+                        (title, content, folder, now, page_id))
             conn.commit()
             return page_id
         else:
-            cur.execute("INSERT INTO wiki (title, content, updated_at) VALUES (?, ?, ?)",
-                        (title, content, now))
+            cur.execute("INSERT INTO wiki (title, content, folder, updated_at) VALUES (?, ?, ?, ?)",
+                        (title, content, folder, now))
             conn.commit()
             return cur.lastrowid
 
@@ -295,13 +303,6 @@ def embed_wiki_page(wiki_id, title, content):
     )
     print(f"Wiki page '{title}' (ID: {wiki_id}) embedded successfully.")
 
-@app.route("/wiki")
-def wiki_list():
-    if "user" not in session:
-        return redirect(url_for("login"))
-    pages = get_all_wiki_pages()
-    return render_template("wiki_list.html", pages=pages)
-
 @app.route("/wiki/view/<int:page_id>")
 def wiki_view(page_id):
     if "user" not in session:
@@ -309,7 +310,7 @@ def wiki_view(page_id):
     page = get_wiki_page(page_id)
     if not page:
         flash("Wiki page not found.", "error")
-        return redirect(url_for("wiki_list"))
+        return redirect(url_for("knowledge"))
     return render_template("wiki_view.html", page=page)
 
 @app.route("/wiki/edit/<int:page_id>")
@@ -319,14 +320,14 @@ def wiki_edit(page_id):
     page = get_wiki_page(page_id)
     if not page:
         flash("Wiki page not found.", "error")
-        return redirect(url_for("wiki_list"))
+        return redirect(url_for("knowledge"))
     return render_template("wiki_edit.html", page=page)
 
 @app.route("/wiki/new")
 def wiki_new():
     if "user" not in session:
         return redirect(url_for("login"))
-    page = {"id": None, "title": "", "content": ""}
+    page = {"id": None, "title": "", "content": "", "folder": ""}
     return render_template("wiki_edit.html", page=page)
 
 @app.route("/wiki/save", methods=["POST"])
@@ -335,11 +336,12 @@ def wiki_save():
         return redirect(url_for("login"))
     title = request.form.get("title").strip()
     content = request.form.get("content").strip()
+    folder = request.form.get("folder", "").strip()
     page_id = request.form.get("id")
     if not title or not content:
         flash("Title and content cannot be empty.", "error")
         return redirect(url_for("wiki_new") if not page_id else url_for("wiki_edit", page_id=page_id))
-    saved_page_id = save_wiki_page(title, content, page_id)
+    saved_page_id = save_wiki_page(title, content, folder, page_id)
     embed_wiki_page(saved_page_id, title, content)
     flash("Wiki page saved and embedded successfully.", "success")
     return redirect(url_for("wiki_view", page_id=saved_page_id))

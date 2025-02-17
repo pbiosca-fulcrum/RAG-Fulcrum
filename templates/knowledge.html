@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Knowledge Base - TheFulcrum's Chat</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    /* Basic tab styling */
+    .tab-container {
+      display: flex;
+      border-bottom: 2px solid #ccc;
+      margin-bottom: 20px;
+    }
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      background-color: #f1f5f9;
+      border: 1px solid #d1d5db;
+      border-bottom: none;
+      margin-right: 2px;
+      border-radius: 8px 8px 0 0;
+    }
+    .tab.active {
+      background-color: white;
+      border-bottom: 2px solid white;
+      font-weight: bold;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+      background-color: #ffffff;
+      border: 1px solid #d1d5db;
+      padding: 20px;
+      border-radius: 0 8px 8px 8px;
+    }
+    .subsection-title {
+      margin-top: 0;
+    }
+    /* Minimally refine lists */
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    ul li {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <img src="/static/logo.png" alt="Logo" class="logo">
+      <h1>Knowledge Base</h1>
+      <nav>
+        <a href="/">Chat</a> |
+        <a href="/knowledge">Knowledge</a> |
+        <a href="/logout">Logout</a>
+      </nav>
+    </header>
+
+    <!-- Tabs -->
+    <div class="tab-container">
+      <div class="tab active" data-tab="docs-tab">Documents</div>
+      <div class="tab" data-tab="wiki-tab">Wiki Pages</div>
+      <div class="tab" data-tab="upload-tab">Add Document</div>
+      <div class="tab" data-tab="wiki-new-tab">New Wiki Page</div>
+    </div>
+
+    <!-- Documents tab content -->
+    <div id="docs-tab" class="tab-content active">
+      <h2 class="subsection-title">Uploaded Documents</h2>
+      {% if docs %}
+        <ul>
+          {% for doc in docs %}
+          <li>
+            <strong>{{ doc.title }}</strong><br>
+            Uploaded by {{ doc.uploader }} at {{ doc.upload_time }}<br>
+            <a href="/uploads/{{ doc.folder | replace('uploads/', '') }}/{{ doc.filename }}" target="_blank">View Document</a>
+          </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No documents found. You can add one from the "Add Document" tab.</p>
+      {% endif %}
+    </div>
+
+    <!-- Wiki tab content -->
+    <div id="wiki-tab" class="tab-content">
+      <h2 class="subsection-title">Wiki Pages</h2>
+      {% if pages %}
+        <ul>
+          {% for page in pages %}
+          <li>
+            <a href="/wiki/view/{{ page.id }}"><strong>{{ page.title }}</strong></a>
+            {% if page.folder %}
+              <em>[{{ page.folder }}]</em>
+            {% endif %}
+            <br>
+            Last updated: {{ page.updated_at }}
+            <a href="/wiki/edit/{{ page.id }}" class="btn">Edit</a>
+          </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No wiki pages found. You can create one from the "New Wiki Page" tab.</p>
+      {% endif %}
+    </div>
+
+    <!-- Add Document tab content -->
+    <div id="upload-tab" class="tab-content">
+      <h2 class="subsection-title">Upload a New Document</h2>
+      <form action="/upload_page" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+          <label for="document">Select Document:</label>
+          <input type="file" name="document" id="document" accept=".pdf,.txt,.docx,.xlsx,.png,.jpg,.jpeg" required/>
+        </div>
+        <button type="submit" class="btn" id="uploadBtn">Upload Document</button>
+      </form>
+    </div>
+
+    <!-- New Wiki Page tab content -->
+    <div id="wiki-new-tab" class="tab-content">
+      <h2 class="subsection-title">Create a New Wiki Page</h2>
+      <form action="/wiki/save" method="post">
+        <div class="form-group">
+          <label for="title">Title:</label>
+          <input type="text" name="title" id="title" required>
+        </div>
+        <div class="form-group">
+          <label for="folder">Folder / Topic (optional):</label>
+          <input type="text" name="folder" id="folder">
+        </div>
+        <div class="form-group">
+          <label for="content">Content (Markdown supported):</label>
+          <textarea name="content" id="content" style="width:100%; height:200px;" required></textarea>
+        </div>
+        <button type="submit" class="btn">Save Wiki Page</button>
+      </form>
+    </div>
+
+  </div>
+  <script>
+    // Simple tab switching logic
+    const tabs = document.querySelectorAll(".tab");
+    const contents = document.querySelectorAll(".tab-content");
+
+    tabs.forEach(tab => {
+      tab.addEventListener("click", () => {
+        // Remove active class from all tabs
+        tabs.forEach(t => t.classList.remove("active"));
+        // Hide all tab contents
+        contents.forEach(c => c.classList.remove("active"));
+
+        // Activate the clicked tab
+        tab.classList.add("active");
+        const target = tab.getAttribute("data-tab");
+        const content = document.getElementById(target);
+        if (content) {
+          content.classList.add("active");
+        }
+      });
+    });
+  </script>
+</body>
+</html>

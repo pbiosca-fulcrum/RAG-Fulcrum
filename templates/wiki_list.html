@@ -6,6 +6,17 @@
   <title>Wiki Pages - TheFulcrum's Chat</title>
   <link rel="stylesheet" href="/static/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    .folder-header {
+      font-size: 1.5rem;
+      margin: 20px 0 10px;
+      border-bottom: 2px solid #10a37f;
+      padding-bottom: 5px;
+    }
+    .wiki-item {
+      margin-bottom: 15px;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -13,24 +24,30 @@
       <img src="/static/logo.png" alt="Logo" class="logo">
       <h1>Wiki Pages</h1>
       <nav>
-        <a href="/">Chat</a> | 
-        <a href="/wiki">Wiki</a> | 
-        <a href="/documents">Documents</a> | 
-        <a href="/upload_page">Add Document</a> | 
+        <a href="/">Chat</a> |
+        <a href="/knowledge">Knowledge</a> |
         <a href="/logout">Logout</a>
       </nav>
-      <p>Collaboratively build the knowledge base that the chatbot uses.</p>
-      <a href="/wiki/new" class="btn">New Wiki Page</a>
+      <p>This page remains available, but you can also use the unified <strong>Knowledge</strong> section to manage Wiki pages.</p>
     </header>
     <section>
-      <ul>
-        {% for page in pages %}
-          <li>
-            <a href="/wiki/view/{{ page.id }}"><strong>{{ page.title }}</strong></a> - Last updated: {{ page.updated_at }}
-            <a href="/wiki/edit/{{ page.id }}" class="btn">Edit</a>
-          </li>
-        {% endfor %}
-      </ul>
+      {% if pages %}
+        <ul>
+          {% for page in pages %}
+            <li class="wiki-item">
+              <a href="/wiki/view/{{ page.id }}"><strong>{{ page.title }}</strong></a>
+              {% if page.folder %}
+                <em>[{{ page.folder }}]</em>
+              {% endif %}
+              <br>
+              Last updated: {{ page.updated_at }}
+              <a href="/wiki/edit/{{ page.id }}" class="btn">Edit</a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No wiki pages found.</p>
+      {% endif %}
     </section>
   </div>
 </body>

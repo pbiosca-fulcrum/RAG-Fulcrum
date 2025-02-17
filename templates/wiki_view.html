@@ -6,6 +6,12 @@
   <title>{{ page.title }} - Wiki - TheFulcrum's Chat</title>
   <link rel="stylesheet" href="/static/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    .wiki-meta {
+      margin-top: 10px;
+      color: #5c6773;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -13,10 +19,8 @@
       <img src="/static/logo.png" alt="Logo" class="logo">
       <h1>{{ page.title }}</h1>
       <nav>
-        <a href="/">Chat</a> | 
-        <a href="/wiki">Wiki</a> | 
-        <a href="/documents">Documents</a> | 
-        <a href="/upload_page">Add Document</a> | 
+        <a href="/">Chat</a> |
+        <a href="/knowledge">Knowledge</a> |
         <a href="/logout">Logout</a>
       </nav>
       <a href="/wiki/edit/{{ page.id }}" class="btn">Edit Wiki Page</a>
@@ -25,7 +29,12 @@
       <article>
         {{ page.content | safe }}
       </article>
-      <p><em>Last updated: {{ page.updated_at }}</em></p>
+      <div class="wiki-meta">
+        {% if page.folder %}
+          Folder: {{ page.folder }} |
+        {% endif %}
+        Last updated: {{ page.updated_at }}
+      </div>
     </section>
   </div>
 </body>
