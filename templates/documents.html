@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Uploaded Documents - TheFulcrum's Chat</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <img src="/static/logo.png" alt="Logo" class="logo" />
+      <h1>Uploaded Documents</h1>
+      <nav>
+        <a href="/">Chat</a> | 
+        <a href="/documents">Documents</a> | 
+        <a href="/logout">Logout</a>
+      </nav>
+      <p>Browse the documents that have been uploaded.</p>
+    </header>
+    <section class="documents-section">
+      <ul>
+        {% for file in files %}
+          <li><a href="/uploads/{{ file }}" target="_blank">{{ file }}</a></li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+</body>
+</html>

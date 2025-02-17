@@ -24,3 +24,6 @@ __pycache__/*
 
 prompt_chatgpt.py
 combined_python_files.txt
+
+chroma_db/*
+uploads/*

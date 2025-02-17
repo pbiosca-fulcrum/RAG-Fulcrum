@@ -1,30 +1,76 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Simple RAG Example</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TheFulcrum's Chat</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <!-- Import Inter font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
 </head>
 <body>
-    <h1>Upload a Document</h1>
-    <form action="/upload" method="POST" enctype="multipart/form-data">
-        <input type="file" name="document" accept=".pdf,.txt,.docx,.xlsx,.png,.jpg,.jpeg"/>
-        <button type="submit">Upload</button>
-    </form>
-    <hr/>
-    <h2>Ask a Question</h2>
-    <input id="question" type="text" size="80" placeholder="Type your question..."/>
-    <button onclick="askQuestion()">Ask</button>
-    <p>Answer: <span id="answer"></span></p>
-    <script>
-    async function askQuestion() {
-        const question = document.getElementById("question").value;
-        const response = await fetch("/query", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({ question: question })
+  <div class="container">
+    <header>
+      <img src="/static/logo.png" alt="Logo" class="logo" />
+      <h1>TheFulcrum's Chat</h1>
+      <nav>
+        <a href="/">Chat</a> | 
+        <a href="/documents">Documents</a> | 
+        <a href="/logout">Logout</a>
+      </nav>
+      <p>Your interactive retrieval-augmented assistant for Fulcrum Asset Management.</p>
+    </header>
+    <section class="chat-section">
+      <div id="conversation" class="conversation" style="display:none;"></div>
+      <div class="chat-input">
+        <input id="question" type="text" placeholder="Type your message..." />
+        <button type="button" onclick="askQuestion()" class="btn">Send</button>
+      </div>
+    </section>
+  </div>
+  <script>
+    // Load conversation from localStorage
+    const conversationDiv = document.getElementById("conversation");
+    let conversation = JSON.parse(localStorage.getItem("conversation") || "[]");
+    function renderConversation() {
+      conversationDiv.innerHTML = "";
+      if (conversation.length > 0) {
+        conversationDiv.style.display = "block";
+        conversation.forEach(msg => {
+          const div = document.createElement("div");
+          div.className = "message " + (msg.sender === "user" ? "user-message" : "bot-message");
+          div.innerText = (msg.sender === "user" ? "You: " : "TheFulcrum's Chat: ") + msg.text;
+          conversationDiv.appendChild(div);
         });
-        const data = await response.json();
-        document.getElementById("answer").innerText = data.answer;
+      } else {
+        conversationDiv.style.display = "none";
+      }
     }
-    </script>
+    renderConversation();
+
+    async function askQuestion() {
+      const questionInput = document.getElementById("question");
+      const question = questionInput.value.trim();
+      if (!question) {
+        alert("Please enter a message.");
+        return;
+      }
+      conversation.push({sender: "user", text: question});
+      renderConversation();
+      questionInput.value = "";
+
+      const response = await fetch("/query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: question }),
+      });
+      const data = await response.json();
+      const answerText = data.answer || "Error: No answer received.";
+      conversation.push({sender: "bot", text: answerText});
+      renderConversation();
+      localStorage.setItem("conversation", JSON.stringify(conversation));
+      conversationDiv.scrollTop = conversationDiv.scrollHeight;
+    }
+  </script>
 </body>
 </html>

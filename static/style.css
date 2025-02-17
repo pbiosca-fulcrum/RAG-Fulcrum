@@ -1,1 +1,170 @@
-/* This should have the css content */
+/* Global styling */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: "Inter", sans-serif;
+    background-color: #f7f7f8;
+    color: #343541;
+  }
+  
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  
+  header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+  }
+  
+  header nav a {
+    color: #10a37f;
+    text-decoration: none;
+    margin: 0 10px;
+  }
+  
+  header nav a:hover {
+    text-decoration: underline;
+  }
+  
+  header p {
+    font-size: 1rem;
+    color: #5c6773;
+  }
+  
+  .logo {
+    max-width: 150px;
+    margin-bottom: 20px;
+  }
+  
+  /* Chat Section */
+  .chat-section {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .conversation {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #d1d5db;
+    padding: 10px;
+    margin-bottom: 20px;
+    background-color: #fff;
+    border-radius: 4px;
+  }
+  
+  .message {
+    margin-bottom: 10px;
+    padding: 8px;
+    border-radius: 4px;
+  }
+  
+  .user-message {
+    background-color: #e0f7fa;
+    text-align: right;
+  }
+  
+  .bot-message {
+    background-color: #f1f5f9;
+    border-left: 4px solid #10a37f;
+    text-align: left;
+  }
+  
+  .chat-input {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .chat-input input[type="text"] {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+  
+  .btn {
+    background-color: #10a37f;
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    font-size: 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .btn:hover {
+    background-color: #0e8c6c;
+  }
+  
+  /* Documents Section */
+  .documents-section ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .documents-section li {
+    margin-bottom: 10px;
+  }
+  
+  .documents-section a {
+    color: #10a37f;
+    text-decoration: none;
+  }
+  
+  .documents-section a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Flashes */
+  .flashes {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .flashes li {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+  }
+  
+  .flashes .success {
+    background-color: #d4edda;
+    color: #155724;
+  }
+  
+  .flashes .error {
+    background-color: #f8d7da;
+    color: #721c24;
+  }
+  
+  .flashes .info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+  }
+  
+  /* Error Section */
+  .error-section {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    padding: 20px;
+    border-radius: 8px;
+    color: #721c24;
+  }
+  
+  /* Horizontal Rule */
+  hr {
+    border: none;
+    border-top: 1px solid #e5e7eb;
+    margin: 40px 0;
+  }
+  
