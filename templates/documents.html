@@ -15,14 +15,19 @@
       <nav>
         <a href="/">Chat</a> | 
         <a href="/documents">Documents</a> | 
+        <a href="/upload_page">Add Document</a> | 
         <a href="/logout">Logout</a>
       </nav>
-      <p>Browse the documents that have been uploaded.</p>
+      <p>Browse the documents below (sorted by upload date, newest first):</p>
     </header>
     <section class="documents-section">
       <ul>
-        {% for file in files %}
-          <li><a href="/uploads/{{ file }}" target="_blank">{{ file }}</a></li>
+        {% for doc in docs %}
+          <li>
+            <strong>{{ doc.title }}</strong><br>
+            Uploaded by {{ doc.uploader }} on {{ doc.upload_time }}<br>
+            <a href="/uploads/{{ doc.folder | replace('\\','/') }}/{{ doc.filename }}" target="_blank">View Document</a>
+          </li>
         {% endfor %}
       </ul>
     </section>

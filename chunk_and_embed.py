@@ -50,7 +50,6 @@ def embed_text(text: str) -> List[float]:
     return vector
 
 def generate_document_title(file_path: str) -> str:
-    # Attempt to extract up to 500 characters of text from the document
     ext = os.path.splitext(file_path)[1].lower()
     content = ""
     if ext == ".txt":
@@ -90,7 +89,6 @@ def generate_document_title(file_path: str) -> str:
 def chunk_and_embed_file(file_path: str, doc_id: str, extra_metadata=None):
     file_ext = os.path.splitext(file_path)[1].lower()
     docs_to_embed = []
-
     if file_ext == ".pdf":
         try:
             elements = partition_pdf(file_path, infer_table_structure=True)

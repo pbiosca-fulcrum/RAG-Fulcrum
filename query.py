@@ -25,6 +25,8 @@ def generate_answer(question: str) -> str:
     context_text = ""
     for i, doc_text in enumerate(retrieved_docs):
         context_text += f"Snippet {i+1}:\n{doc_text}\n\n"
+        
+    print(f"Question: {question}\n\nContext:\n{context_text}")
 
     system_prompt = (
         "You are TheFulcrum's Chat, a helpful assistant for Fulcrum Asset Management. "

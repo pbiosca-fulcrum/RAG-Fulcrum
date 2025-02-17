@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Login - TheFulcrum's Chat</title>
+  <title>Register - TheFulcrum's Chat</title>
   <link rel="stylesheet" href="/static/style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
 </head>
@@ -11,7 +11,7 @@
   <div class="container">
     <header>
       <img src="/static/logo.png" alt="Logo" class="logo" />
-      <h1>Login</h1>
+      <h1>Register</h1>
     </header>
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
@@ -22,7 +22,7 @@
         </ul>
       {% endif %}
     {% endwith %}
-    <form action="/login" method="post">
+    <form action="/register" method="post">
       <div class="form-group">
         <label for="username">Username:</label>
         <input type="text" name="username" id="username" required/>
@@ -31,9 +31,9 @@
         <label for="password">Password:</label>
         <input type="password" name="password" id="password" required/>
       </div>
-      <button type="submit" class="btn">Login</button>
+      <button type="submit" class="btn">Register</button>
     </form>
-    <p>Don't have an account? <a href="/register">Register here</a>.</p>
+    <p>Already have an account? <a href="/login">Login here</a>.</p>
   </div>
 </body>
 </html>
