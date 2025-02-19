@@ -24,8 +24,8 @@
         {% for doc in docs %}
           <li>
             <strong>{{ doc.title }}</strong><br>
-            Uploaded by {{ doc.uploader }} at {{ doc.upload_time }}<br>
-            <a href="/uploads/{{ doc.folder | replace('uploads/', '') }}/{{ doc.filename }}" target="_blank">View Document</a>
+            Uploaded by {{ doc.uploader }} at {{ doc.upload_display }}<br>
+            <a href="/uploads/{{ doc.folder }}/{{ doc.filename }}" target="_blank">View Document</a>
           </li>
         {% endfor %}
       </ul>

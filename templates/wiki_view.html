@@ -23,7 +23,6 @@
         <a href="/knowledge">Knowledge</a> |
         <a href="/logout">Logout</a>
       </nav>
-      <a href="/wiki/edit/{{ page.id }}" class="btn">Edit Wiki Page</a>
     </header>
     <section>
       <article>
@@ -35,6 +34,7 @@
         {% endif %}
         Last updated: {{ page.updated_at }}
       </div>
+      <a href="/wiki/edit/{{ page.id }}" class="btn" style="margin-top:20px;">Edit Wiki Page</a>
     </section>
   </div>
 </body>

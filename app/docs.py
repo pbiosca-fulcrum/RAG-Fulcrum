@@ -69,11 +69,14 @@ def upload_page():
         os.rename(temp_file_path, new_file_path)
         doc_id = str(uuid.uuid4())
         uploader = session.get("user", "unknown")
-        upload_time = now.strftime("%H:%M")
+        # Store the full ISO timestamp for sorting and a display version (hh:mm)
+        upload_time = now.isoformat()
+        upload_display = now.strftime("%H:%M")
         extra_metadata = {
             "title": title,
             "uploader": uploader,
             "upload_time": upload_time,
+            "upload_display": upload_display,
             "folder": relative_folder,
             "filename": new_filename,
             "ext": ext
@@ -106,6 +109,7 @@ def uploaded_file(filename):
 def get_all_documents():
     with open(METADATA_FILE, "r") as f:
         docs = json.load(f)
+    # Sort by full upload timestamp (ISO format) descending
     docs = sorted(docs, key=lambda x: x.get("upload_time", ""), reverse=True)
     for doc in docs:
         ext = doc.get("ext", "")

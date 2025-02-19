@@ -37,25 +37,25 @@ def generate_answer(question: str, debug: bool = False):
     unique_sources = []
 
     for i, (doc_text, meta) in enumerate(zip(docs, metadatas)):
-        doc_id = meta.get("doc_id")
-        title = meta.get("title", "Unknown")
         if meta.get("type") == "wiki":
-            source = {"type": "wiki", "wiki_id": doc_id, "title": title}
+            wiki_id = meta.get("wiki_id")
+            title = meta.get("title", "Unknown")
+            source = {"type": "wiki", "wiki_id": wiki_id, "title": title}
+            link = f"/wiki/view/{wiki_id}"
         else:
+            doc_id = meta.get("doc_id")
+            title = meta.get("title", "Unknown")
             folder = meta.get("folder")
             filename = meta.get("filename")
-            link = f"/uploads/{folder}/{filename}" if folder and filename else "#"
+            link = f"/uploads/{folder}/{filename}" if folder and filename else "No file link"
             source = {"type": "document", "doc_id": doc_id, "title": title, "folder": folder, "filename": filename, "link": link}
-        if source.get("type") == "document":
-            if not any(s.get("doc_id") == doc_id for s in unique_sources):
+        if meta.get("type") == "wiki":
+            if not any(s.get("wiki_id") == source.get("wiki_id") for s in unique_sources):
                 unique_sources.append(source)
         else:
-            if not any(s.get("wiki_id") == doc_id for s in unique_sources):
+            if not any(s.get("doc_id") == source.get("doc_id") for s in unique_sources):
                 unique_sources.append(source)
 
-        folder = meta.get("folder")
-        filename = meta.get("filename")
-        link = f"/uploads/{folder}/{filename}" if folder and filename else "No file link"
         context_text += f"Snippet {i+1} from '{title}' ({link}):\n{doc_text}\n\n"
 
     if not context_text.strip():

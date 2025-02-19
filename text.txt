@@ -1,5 +1,21 @@
-Very clear rules. Impelment them all with fallbacks.
+I need the following modifications:
 
-1) Here is my current code of a RAG implemented at Fulcrum. It works fine so far, the problem is that I feel the chunks of text extracted from original documents are too small, and images are not very well extracted nor encoded in the final query when the document is a .docx, or .pdf.
+1) Nice rendering on the /wiki/view . At the moment it is all stacked in "one line" and without breaklines. I want to preserve the format I would see on a markdown file, so # should be titles and things like these. Also bring the button to the bottom right and a bit more down.
 
-2) I want to have a button that says source (at the right /bottom next to the send button (on the left. On pressed, get back the original documents that were used to construct the previouus  response and output. The sources for my previous response are Doc1 (Internal Link that let's me visualize it) add a hyperlink, Doc2 (internal link that let's me visualize it) prompt the Document Title (and section if it has). If the document is a wiki page, prompt me to the wiki page and let the user edit it. Have 
+
+
+2) One the rendering on the sources tab, you dispaly h1, p tags, but I want it nicely rendered with a better font if possible:
+
+3) The original documents are still not visible when clicked. The links do not work http://127.0.0.1:5782/uploads/2025/02/_Interest_Rate_Swap_Valuation__Yield_Curve_Construction_and_Analysis_.pdf
+
+Not Found
+The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+
+127.0.0.1 - - [19/Feb/2025 12:23:32] "GET /static/logo.png HTTP/1.1" 304 -
+127.0.0.1 - - [19/Feb/2025 12:23:32] "GET /static/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [19/Feb/2025 12:23:33] "GET /sources HTTP/1.1" 200 -
+127.0.0.1 - - [19/Feb/2025 12:23:34] "GET /static/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [19/Feb/2025 12:23:34] "GET /static/logo.png HTTP/1.1" 304 -
+127.0.0.1 - - [19/Feb/2025 12:24:04] "GET /uploads/2025/02/_Interest_Rate_Swap_Valuation__Yield_Curve_Construction_and_Analysis_.pdf HTTP/1.1" 404 -
+
+4) Use titktoken and cls100 or whatever to tokenize input text and 

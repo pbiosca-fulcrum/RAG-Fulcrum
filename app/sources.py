@@ -2,6 +2,7 @@ import os
 import json
 from flask import Blueprint, render_template, session, redirect, url_for, flash
 from app.wiki import get_wiki_page
+import markdown  # Added to render wiki content as Markdown
 
 sources_bp = Blueprint('sources', __name__)
 
@@ -43,7 +44,8 @@ def sources():
         elif source.get("type") == "wiki":
             page = get_wiki_page(source.get("wiki_id"))
             if page:
-                source["full_text"] = page.get("content")
+                # Render wiki content using Markdown
+                source["full_text"] = markdown.markdown(page.get("content"))
                 source["view_link"] = f"/wiki/view/{source.get('wiki_id')}"
                 source["edit_link"] = f"/wiki/edit/{source.get('wiki_id')}"
             else:

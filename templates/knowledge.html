@@ -136,8 +136,8 @@
           <li class="document-item">
             <div>
               <strong>{{ doc.title }}</strong><br>
-              Uploaded by {{ doc.uploader }} at {{ doc.upload_time }}<br>
-              <a href="/uploads/{{ doc.folder | replace('uploads/', '') }}/{{ doc.filename }}" target="_blank">View Document</a>
+              Uploaded by {{ doc.uploader }} at {{ doc.upload_display }}<br>
+              <a href="/uploads/{{ doc.folder }}/{{ doc.filename }}" target="_blank">View Document</a>
             </div>
             <div class="document-buttons">
               <form action="/document/delete/{{ doc.get('doc_id') }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this document?');">

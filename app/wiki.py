@@ -79,7 +79,8 @@ def embed_wiki_page(wiki_id, title, content):
         collection.delete(ids=[embedding_id])
     except Exception as e:
         print(f"Warning: could not delete existing wiki embedding: {e}")
-    metadata = {"type": "wiki", "title": title}
+    # Store the wiki_id in metadata so that later we can reference the correct wiki page.
+    metadata = {"type": "wiki", "title": title, "wiki_id": wiki_id}
     collection.add(
         documents=[content],
         embeddings=[vector],
