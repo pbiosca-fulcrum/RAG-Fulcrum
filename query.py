@@ -1,6 +1,7 @@
 from openai import OpenAI
 from database import collection
 from config import OPENAI_API_KEY, CHAT_MODEL, TOP_K
+from flask import session  # Added to store sources
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -33,24 +34,29 @@ def generate_answer(question: str, debug: bool = False):
     docs = results["documents"][0]
     metadatas = results["metadatas"][0]
     context_text = ""
-    # Also gather unique sources for potential references
-    unique_sources = {}
+    unique_sources = []
 
     for i, (doc_text, meta) in enumerate(zip(docs, metadatas)):
+        doc_id = meta.get("doc_id")
+        title = meta.get("title", "Unknown")
+        if meta.get("type") == "wiki":
+            source = {"type": "wiki", "wiki_id": doc_id, "title": title}
+        else:
+            folder = meta.get("folder")
+            filename = meta.get("filename")
+            link = f"/uploads/{folder}/{filename}" if folder and filename else "#"
+            source = {"type": "document", "doc_id": doc_id, "title": title, "folder": folder, "filename": filename, "link": link}
+        if source.get("type") == "document":
+            if not any(s.get("doc_id") == doc_id for s in unique_sources):
+                unique_sources.append(source)
+        else:
+            if not any(s.get("wiki_id") == doc_id for s in unique_sources):
+                unique_sources.append(source)
+
         folder = meta.get("folder")
         filename = meta.get("filename")
-        title = meta.get("title", "Unknown")
-        # Link if available
-        link = ""
-        if folder and filename:
-            link = f"/uploads/{folder}/{filename}"
-
-        # Gather context
-        context_text += f"Snippet {i+1} from '{title}' ({link if link else 'No file link'}):\n{doc_text}\n\n"
-
-        # Collect unique sources by title
-        if title not in unique_sources:
-            unique_sources[title] = link if link else "#"
+        link = f"/uploads/{folder}/{filename}" if folder and filename else "No file link"
+        context_text += f"Snippet {i+1} from '{title}' ({link}):\n{doc_text}\n\n"
 
     if not context_text.strip():
         context_text = "No document context available."
@@ -73,19 +79,10 @@ def generate_answer(question: str, debug: bool = False):
     )
     final_answer = response.choices[0].message.content.strip()
 
-    # If user specifically asks for sources/references, append them:
-    if any(x in question.lower() for x in ["source", "sources", "reference", "references"]):
-        if unique_sources:
-            final_answer += "\n\n**Sources**:"
-            for title, url in unique_sources.items():
-                if url != "#":
-                    # Hidden under the document title but clickable:
-                    final_answer += f"\n- [{title}]({url})"
-                else:
-                    final_answer += f"\n- {title} (no direct link)"
+    # Store the unique sources for later retrieval via the "Source" button.
+    session['last_sources'] = unique_sources
 
     if debug:
-        # Return the debug context as well
         return final_answer, context_text
     else:
         return final_answer

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Source Documents - TheFulcrum's Chat</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <img src="/static/logo.png" alt="Logo" class="logo" />
+      <h1>Source Documents</h1>
+      <nav>
+        <a href="/">Chat</a> |
+        <a href="/knowledge">Knowledge</a> |
+        <a href="/logout">Logout</a>
+      </nav>
+    </header>
+    <section>
+      {% if sources %}
+        {% for source in sources %}
+          <div class="source-item" style="margin-bottom: 20px; padding: 10px; border: 1px solid #d1d5db; border-radius: 4px;">
+            <h2>{{ source.title }}</h2>
+            {% if source.type == "document" %}
+              <p><a href="{{ source.view_link }}" target="_blank">View Original Document</a></p>
+            {% elif source.type == "wiki" %}
+              <p>
+                <a href="{{ source.view_link }}" target="_blank">View Wiki Page</a> | 
+                <a href="{{ source.edit_link }}" target="_blank">Edit Wiki Page</a>
+              </p>
+            {% endif %}
+            <h3>Full Content:</h3>
+            <pre style="white-space: pre-wrap; background: #f7f7f8; padding: 10px; border-radius: 4px;">{{ source.full_text }}</pre>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p>No source documents available.</p>
+      {% endif %}
+      <p><a href="/" class="btn">Back to Chat</a></p>
+    </section>
+  </div>
+</body>
+</html>
