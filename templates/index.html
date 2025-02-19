@@ -29,6 +29,7 @@
       <div class="chat-input">
         <input id="question" type="text" placeholder="Type your message..." />
         <button type="button" onclick="askQuestion()" class="btn">Send</button>
+        <!-- Changed showSources to redirect in the same tab -->
         <button type="button" onclick="showSources()" class="btn">Source</button>
       </div>
     </section>
@@ -39,12 +40,12 @@
     let conversation = JSON.parse(localStorage.getItem("conversation") || "[]");
     let chatDebug = localStorage.getItem("chat_debug") === "true";
     const debugToggleButton = document.getElementById("debugToggle");
-
+    
     function updateDebugButton() {
       debugToggleButton.innerText = chatDebug ? "Chat Debug: On" : "Chat Debug: Off";
     }
     updateDebugButton();
-
+    
     function renderConversation() {
       conversationDiv.innerHTML = "";
       if (conversation.length > 0) {
@@ -66,7 +67,7 @@
       }
     }
     renderConversation();
-
+    
     async function askQuestion() {
       const questionInput = document.getElementById("question");
       const question = questionInput.value.trim();
@@ -74,18 +75,15 @@
         alert("Please enter a message.");
         return;
       }
-
-      // User message
       conversation.push({sender: "user", text: question});
       renderConversation();
       questionInput.value = "";
-
+      
       // Show a "typing..." indicator
       const typingMessage = {sender: "bot", text: "typing..."};
       conversation.push(typingMessage);
       renderConversation();
-
-      // Call the backend
+      
       const response = await fetch("/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -93,18 +91,18 @@
       });
       const data = await response.json();
       const answerText = data.answer || "Error: No answer received.";
-
-      // Replace the typing indicator with the final answer
+      
+      // Replace typing indicator with final answer
       conversation[conversation.length - 1] = {sender: "bot", text: answerText};
       renderConversation();
       localStorage.setItem("conversation", JSON.stringify(conversation));
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
-
+      
       if (chatDebug && data.debug_context) {
         console.log("Debug Context:\n" + data.debug_context);
       }
     }
-
+    
     const questionInput = document.getElementById("question");
     questionInput.addEventListener("keydown", function(event) {
       if (event.key === "Enter") {
@@ -112,7 +110,7 @@
         askQuestion();
       }
     });
-
+    
     function restartChat() {
       if (confirm("Are you sure you want to restart the chat? This will clear the conversation history.")) {
         localStorage.removeItem("conversation");
@@ -120,31 +118,18 @@
         renderConversation();
       }
     }
-
+    
     function toggleChatDebug() {
       chatDebug = !chatDebug;
       localStorage.setItem("chat_debug", chatDebug);
       updateDebugButton();
-      alert("Chat debug mode is now " + (chatDebug ? "enabled" : "disabled") + 
+      alert("Chat debug mode is now " + (chatDebug ? "enabled" : "disabled") +
             ". In debug mode, additional context information will be logged to the console.");
     }
-
+    
+    // Modified showSources: now redirects the current tab to /sources
     function showSources() {
-      fetch("/sources")
-      .then(response => {
-          if (response.ok) {
-              return response.text();
-          } else {
-              throw new Error("No source information available.");
-          }
-      })
-      .then(html => {
-          var newWindow = window.open("", "_blank");
-          newWindow.document.write(html);
-      })
-      .catch(error => {
-          alert(error.message);
-      });
+      window.location.href = "/sources";
     }
   </script>
 </body>
