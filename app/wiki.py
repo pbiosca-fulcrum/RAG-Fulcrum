@@ -4,28 +4,13 @@ import sqlite3
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from markupsafe import Markup
 import markdown
+
 from chunk_and_embed import embed_text
 from database import collection
+# We now import the WIKI_DB constant from database_setup
+from app.database_setup import WIKI_DB
 
 wiki_bp = Blueprint('wiki', __name__)
-
-WIKI_DB = "wiki.db"
-
-def init_wiki_db():
-    with sqlite3.connect(WIKI_DB) as conn:
-        cur = conn.cursor()
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS wiki (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                content TEXT NOT NULL,
-                folder TEXT DEFAULT '',
-                updated_at TEXT NOT NULL
-            )
-        """)
-        conn.commit()
-
-init_wiki_db()
 
 def get_all_wiki_pages():
     with sqlite3.connect(WIKI_DB) as conn:
@@ -62,13 +47,17 @@ def save_wiki_page(title, content, folder, page_id=None):
     with sqlite3.connect(WIKI_DB) as conn:
         cur = conn.cursor()
         if page_id:
-            cur.execute("UPDATE wiki SET title = ?, content = ?, folder = ?, updated_at = ? WHERE id = ?",
-                        (title, content, folder, now, page_id))
+            cur.execute(
+                "UPDATE wiki SET title = ?, content = ?, folder = ?, updated_at = ? WHERE id = ?",
+                (title, content, folder, now, page_id)
+            )
             conn.commit()
             return page_id
         else:
-            cur.execute("INSERT INTO wiki (title, content, folder, updated_at) VALUES (?, ?, ?, ?)",
-                        (title, content, folder, now))
+            cur.execute(
+                "INSERT INTO wiki (title, content, folder, updated_at) VALUES (?, ?, ?, ?)",
+                (title, content, folder, now)
+            )
             conn.commit()
             return cur.lastrowid
 

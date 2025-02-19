@@ -1,23 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>System Crash - TheFulcrum's Chat</title>
-  <link rel="icon" type="image/png" href="/static/mini-log.png" />
-  <link rel="stylesheet" href="/static/style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
-</head>
-<body>
-  <div class="container">
-    <header>
-      <img src="/static/logo.png" alt="Logo" class="logo" />
-      <h1>System Crash</h1>
-    </header>
-    <section class="error-section">
-      <p>Oh dear, it appears the system has encountered an unexpected hiccup. Even the most sophisticated systems have their off days. Please try again later, or contact support if the issue persists.</p>
-      <p><em>Error Details:</em> {{ error }}</p>
-    </section>
-  </div>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}System Crash - TheFulcrum's Chat{% endblock %}
+
+{% block content %}
+  <section class="error-section">
+    <p>Oh dear, it appears the system has encountered an unexpected hiccup. Even the most sophisticated systems have their off days. Please try again later, or contact support if the issue persists.</p>
+    <p><em>Error Details:</em> {{ error }}</p>
+  </section>
+{% endblock %}

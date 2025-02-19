@@ -1,55 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Wiki Pages - TheFulcrum's Chat</title>
-  <link rel="icon" type="image/png" href="/static/mini-log.png" />
-  <link rel="stylesheet" href="/static/style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  <style>
-    .folder-header {
-      font-size: 1.5rem;
-      margin: 20px 0 10px;
-      border-bottom: 2px solid #10a37f;
-      padding-bottom: 5px;
-    }
-    .wiki-item {
-      margin-bottom: 15px;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <header>
-      <img src="/static/logo.png" alt="Logo" class="logo">
-      <h1>Wiki Pages</h1>
-      <nav>
-        <a href="/">Chat</a> |
-        <a href="/knowledge">Knowledge</a> |
-        <a href="/logout">Logout</a>
-      </nav>
-      <p>This page remains available, but you can also use the unified <strong>Knowledge</strong> section to manage Wiki pages.</p>
-    </header>
-    <section>
-      {% if pages %}
-        <ul>
-          {% for page in pages %}
-            <li class="wiki-item">
-              <a href="/wiki/view/{{ page.id }}"><strong>{{ page.title }}</strong></a>
-              {% if page.folder %}
-                <em>[{{ page.folder }}]</em>
-              {% endif %}
-              <br>
-              Last updated: {{ page.updated_at }}
-              <a href="/wiki/edit/{{ page.id }}" class="btn">Edit</a>
-            </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p>No wiki pages found.</p>
-      {% endif %}
-    </section>
-  </div>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Wiki Pages - TheFulcrum's Chat{% endblock %}
+
+{% block content %}
+  <p>This page remains available, but you can also use the unified <strong>Knowledge</strong> section to manage Wiki pages.</p>
+  {% if pages %}
+    <ul>
+      {% for page in pages %}
+        <li class="wiki-item" style="border-left:none; padding-left:0; margin-bottom:15px;">
+          <a href="/wiki/view/{{ page.id }}"><strong>{{ page.title }}</strong></a>
+          {% if page.folder %}
+            <em>[{{ page.folder }}]</em>
+          {% endif %}
+          <br>
+          Last updated: {{ page.updated_at }}
+          <a href="/wiki/edit/{{ page.id }}" class="btn">Edit</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No wiki pages found.</p>
+  {% endif %}
+{% endblock %}

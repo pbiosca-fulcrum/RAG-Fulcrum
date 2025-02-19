@@ -1,99 +1,52 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Source Documents - TheFulcrum's Chat</title>
-  <link rel="icon" type="image/png" href="/static/mini-log.png" />
-  <link rel="stylesheet" href="/static/style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
-  <style>
-    .source-item {
-      margin-bottom: 20px; 
-      padding: 10px; 
-      border: 1px solid #d1d5db; 
-      border-radius: 4px;
-    }
-    .source-content {
-      font-family: "Inter", sans-serif;
-      font-size: 1rem;
-      line-height: 1.5;
-      background: #f7f7f8;
-      padding: 10px;
-      border-radius: 4px;
-      white-space: pre-wrap;
-    }
-    .relevance-section {
-      margin-top: 8px;
-      font-size: 0.9rem;
-    }
-    .similarity-score {
-      font-weight: bold;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <header>
-      <img src="/static/logo.png" alt="Logo" class="logo" />
-      <h1>Source Documents</h1>
-      <nav>
-        <a href="/">Chat</a> |
-        <a href="/knowledge">Knowledge</a> |
-        <a href="/logout">Logout</a>
-      </nav>
-    </header>
-    <section>
-      {% if last_query %}
-        <p style="font-weight:bold;">These are the documents used to construct your latest query:</p>
-        <p style="margin-bottom:25px;">"{{ last_query }}"</p>
-      {% else %}
-        <p>No record of your last query was found.</p>
-      {% endif %}
+{% extends "base.html" %}
 
-      {% if sources %}
-        {% for source in sources %}
-          <div class="source-item">
-            <h2>{{ source.title }}</h2>
+{% block title %}Source Documents - TheFulcrum's Chat{% endblock %}
 
-            <!-- <div class="relevance-section">
-              Relevance Score:
-              <span class="similarity-score"
-                    style="
-                      color: {% if source.score >= 80 %}green
-                             {% elif source.score >= 60 %}darkorange
-                             {% elif source.score >= 40 %}#e38f19
-                             {% elif source.score >= 20 %}#cc4141
-                             {% else %}red{% endif %};
-                    ">
-                {{ source.score }}%
-              </span>
-            </div> -->
+{% block content %}
+  {% if last_query %}
+    <p style="font-weight:bold;">These are the documents used to construct your latest query:</p>
+    <p style="margin-bottom:25px;">"{{ last_query }}"</p>
+  {% else %}
+    <p>No record of your last query was found.</p>
+  {% endif %}
 
-            {% if source.type == "document" %}
-              <p>
-                <a href="{{ source.link }}" target="_blank">View Original Document</a>
-              </p>
-              <!-- We do not show full content for normal documents anymore -->
-            {% elif source.type == "wiki" %}
-              <p>
-                <a href="{{ source.view_link }}" target="_blank">View Wiki Page</a>
-                {% if source.edit_link %}
-                  | <a href="{{ source.edit_link }}" target="_blank">Edit Wiki Page</a>
-                {% endif %}
-              </p>
-              <h3>Preview (first 500 characters):</h3>
-              <div class="source-content">
-                {{ source.full_text }}
-              </div>
+  {% if sources %}
+    {% for source in sources %}
+      <div class="source-item">
+        <h2>{{ source.title }}</h2>
+
+        {# Uncomment if you want to show Relevance Score #}
+        {# 
+        <div class="relevance-section">
+          Relevance Score:
+          <span class="similarity-score"
+                style="color:{% if source.score >= 80 %}green{% elif source.score >= 60 %}darkorange{% elif source.score >= 40 %}#e38f19{% elif source.score >= 20 %}#cc4141{% else %}red{% endif %};">
+            {{ source.score }}%
+          </span>
+        </div>
+        #}
+
+        {% if source.type == "document" %}
+          <p>
+            <a href="{{ source.link }}" target="_blank">View Original Document</a>
+          </p>
+        {% elif source.type == "wiki" %}
+          <p>
+            <a href="{{ source.view_link }}" target="_blank">View Wiki Page</a>
+            {% if source.edit_link %}
+              | <a href="{{ source.edit_link }}" target="_blank">Edit Wiki Page</a>
             {% endif %}
+          </p>
+          <h3>Preview (first 500 characters):</h3>
+          <div class="source-content">
+            {{ source.full_text }}
           </div>
-        {% endfor %}
-      {% else %}
-        <p>No source documents available.</p>
-      {% endif %}
-      <p><a href="/" class="btn">Back to Chat</a></p>
-    </section>
-  </div>
-</body>
-</html>
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% else %}
+    <p>No source documents available.</p>
+  {% endif %}
+
+  <p><a href="/" class="btn">Back to Chat</a></p>
+{% endblock %}

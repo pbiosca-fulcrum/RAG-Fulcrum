@@ -4,22 +4,10 @@ import sqlite3
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
 
+# We now import the USERS_DB constant from database_setup
+from app.database_setup import USERS_DB
+
 auth_bp = Blueprint('auth', __name__)
-
-USERS_DB = "users.db"
-
-def init_db():
-    with sqlite3.connect(USERS_DB) as conn:
-        cur = conn.cursor()
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL,
-                created_at TEXT NOT NULL
-            )
-        """)
-        conn.commit()
 
 def get_user(username):
     with sqlite3.connect(USERS_DB) as conn:
@@ -34,11 +22,11 @@ def register_user(username, password):
     hashed = generate_password_hash(password)
     with sqlite3.connect(USERS_DB) as conn:
         cur = conn.cursor()
-        cur.execute("INSERT INTO users (username, password, created_at) VALUES (?, ?, ?)",
-                    (username, hashed, datetime.datetime.utcnow().isoformat()))
+        cur.execute(
+            "INSERT INTO users (username, password, created_at) VALUES (?, ?, ?)",
+            (username, hashed, datetime.datetime.utcnow().isoformat())
+        )
         conn.commit()
-
-init_db()
 
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():

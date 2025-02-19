@@ -1,77 +1,35 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% if page.id %}Edit Wiki Page{% else %}New Wiki Page{% endif %} - TheFulcrum's Chat</title>
-  <link rel="icon" type="image/png" href="/static/mini-log.png" />
-  <link rel="stylesheet" href="/static/style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  <style>
-    textarea {
-      width: 100%;
-      height: 300px;
-      padding: 10px;
-      border: 1px solid #d1d5db;
-      border-radius: 4px;
-      font-size: 1rem;
-    }
-    .form-group input[type="text"] {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #d1d5db;
-      border-radius: 4px;
-      font-size: 1rem;
-      margin-bottom: 15px;
-    }
-    .folder-list {
-      margin-bottom: 10px;
-    }
-    .folder-list button {
-      margin: 2px;
-      font-size: 0.8rem;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <header>
-      <img src="/static/logo.png" alt="Logo" class="logo">
-      <h1>{% if page.id %}Edit Wiki Page{% else %}New Wiki Page{% endif %}</h1>
-      <nav>
-        <a href="/">Chat</a> |
-        <a href="/knowledge">Knowledge</a> |
-        <a href="/logout">Logout</a>
-      </nav>
-    </header>
-    <section>
-      {% if all_folders is defined and all_folders %}
-        <div class="folder-list">
-          <strong>Existing Folders:</strong>
-          {% for f in all_folders %}
-            <button type="button" class="btn" onclick="document.getElementById('folder').value='{{f}}'">{{f}}</button>
-          {% endfor %}
-        </div>
-      {% endif %}
-      <form action="/wiki/save" method="post">
-        {% if page.id %}
-          <input type="hidden" name="id" value="{{ page.id }}">
-        {% endif %}
-        <div class="form-group">
-          <label for="title">Title:</label>
-          <input type="text" name="title" id="title" value="{{ page.title }}" required>
-        </div>
-        <div class="form-group">
-          <label for="folder">Folder / Topic:</label>
-          <input type="text" name="folder" id="folder" value="{{ page.folder }}">
-        </div>
-        <div class="form-group">
-          <label for="content">Content (Markdown supported):</label>
-          <textarea name="content" id="content" required>{{ page.content }}</textarea>
-        </div>
-        <button type="submit" class="btn">Save Wiki Page</button>
-      </form>
-    </section>
-  </div>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}
+  {% if page.id %}Edit Wiki Page{% else %}New Wiki Page{% endif %} - TheFulcrum's Chat
+{% endblock %}
+
+{% block content %}
+  {% if all_folders is defined and all_folders %}
+    <div class="folder-list">
+      <strong>Existing Folders:</strong>
+      {% for f in all_folders %}
+        <button type="button" class="btn" onclick="document.getElementById('folder').value='{{f}}'">{{f}}</button>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form action="/wiki/save" method="post">
+    {% if page.id %}
+      <input type="hidden" name="id" value="{{ page.id }}">
+    {% endif %}
+    <div class="form-group">
+      <label for="title">Title:</label>
+      <input type="text" name="title" id="title" value="{{ page.title }}" required>
+    </div>
+    <div class="form-group">
+      <label for="folder">Folder / Topic:</label>
+      <input type="text" name="folder" id="folder" value="{{ page.folder }}">
+    </div>
+    <div class="form-group">
+      <label for="content">Content (Markdown supported):</label>
+      <textarea name="content" id="content" required>{{ page.content }}</textarea>
+    </div>
+    <button type="submit" class="btn">Save Wiki Page</button>
+  </form>
+{% endblock %}

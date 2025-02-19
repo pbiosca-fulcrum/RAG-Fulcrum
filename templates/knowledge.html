@@ -1,283 +1,126 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Knowledge Base - TheFulcrum's Chat</title>
-  <link rel="icon" type="image/png" href="/static/mini-log.png" />
-  <link rel="stylesheet" href="/static/style.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-  <style>
-    /* Basic tab styling */
-    .tab-container {
-      display: flex;
-      border-bottom: 2px solid #ccc;
-      margin-bottom: 20px;
-    }
-    .tab {
-      padding: 10px 20px;
-      cursor: pointer;
-      background-color: #f1f5f9;
-      border: 1px solid #d1d5db;
-      border-bottom: none;
-      margin-right: 2px;
-      border-radius: 8px 8px 0 0;
-    }
-    .tab.active {
-      background-color: white;
-      border-bottom: 2px solid white;
-      font-weight: bold;
-    }
-    .tab-content {
-      display: none;
-    }
-    .tab-content.active {
-      display: block;
-      background-color: #ffffff;
-      border: 1px solid #d1d5db;
-      padding: 20px;
-      border-radius: 0 8px 8px 8px;
-    }
-    .subsection-title {
-      margin-top: 0;
-    }
-    ul {
-      list-style: none;
-      padding: 0;
-    }
-    ul li {
-      margin-bottom: 10px;
-    }
-    .folder-header {
-      cursor: pointer;
-      background-color: #e8f5f2;
-      padding: 10px;
-      margin-bottom: 5px;
-      border-radius: 4px;
-      font-weight: bold;
-      color: #0e8c6c;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .folder-content {
-      display: none;
-      margin-left: 20px;
-      margin-bottom: 20px;
-    }
-    .wiki-item {
-      margin-bottom: 10px;
-      border-left: 3px solid #10a37f;
-      padding-left: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .wiki-buttons {
-      text-align: right;
-      margin-left: 10px;
-    }
-    .document-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .document-buttons {
-      margin-left: 10px;
-      text-align: right;
-    }
-    /* File input styling */
-    input[type="file"] {
-      display: inline-block;
-      cursor: pointer;
-      padding: 8px;
-      border: 2px dashed #10a37f;
-      background-color: #f1f5f9;
-      border-radius: 6px;
-      margin-bottom: 15px;
-    }
-    input[type="file"]:hover {
-      background-color: #e7f3f0;
-    }
-    /* Tag/badge styling */
-    .doc-badge {
-      display: inline-block;
-      background-color: #10a37f;
-      color: #fff;
-      border-radius: 4px;
-      padding: 2px 6px;
-      margin-left: 6px;
-      font-size: 0.8rem;
-    }
-    /* Flash messages styling */
-    .flashes {
-      list-style: none;
-      padding: 0;
-      margin-bottom: 20px;
-    }
-    .flashes li {
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 4px;
-    }
-    .flashes .success {
-      background-color: #d4edda;
-      color: #155724;
-    }
-    .flashes .error {
-      background-color: #f8d7da;
-      color: #721c24;
-    }
-    .flashes .info {
-      background-color: #d1ecf1;
-      color: #0c5460;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <header>
-      <img src="/static/logo.png" alt="Logo" class="logo">
-      <h1>Knowledge Base</h1>
-      <nav>
-        <a href="/">Chat</a> |
-        <a href="/knowledge">Knowledge</a> |
-        <a href="/logout">Logout</a>
-      </nav>
-    </header>
+{% extends "base.html" %}
 
-    <!-- Show flash messages here so the user sees the "uploaded" message -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        <ul class="flashes">
-          {% for category, message in messages %}
-            <li class="{{ category }}">{{ message }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
+{% block title %}Knowledge Base - TheFulcrum's Chat{% endblock %}
 
-    <p style="text-align:center; font-size:1.1rem; color:#555;">
-      This chat becomes more powerful with every new piece of knowledge you add.
-      Keep uploading documents or creating wiki pages to help it learn and serve you better!
-    </p>
+{% block content %}
+  <p style="text-align:center; font-size:1.1rem; color:#555;">
+    This chat becomes more powerful with every new piece of knowledge you add.
+    Keep uploading documents or creating wiki pages to help it learn and serve you better!
+  </p>
 
-    <div class="tab-container">
-      <div class="tab active" data-tab="docs-tab">Documents</div>
-      <div class="tab" data-tab="upload-tab">Add Document</div>
-      <div class="tab" data-tab="wiki-tab">Wiki Pages</div>
-      <div class="tab" data-tab="wiki-new-tab">New Wiki Page</div>
-    </div>
+  <div class="tab-container">
+    <div class="tab active" data-tab="docs-tab">Documents</div>
+    <div class="tab" data-tab="upload-tab">Add Document</div>
+    <div class="tab" data-tab="wiki-tab">Wiki Pages</div>
+    <div class="tab" data-tab="wiki-new-tab">New Wiki Page</div>
+  </div>
 
-    <!-- Documents tab content -->
-    <div id="docs-tab" class="tab-content active">
-      <h2 class="subsection-title">Uploaded Documents</h2>
-      {% if docs %}
-        <ul>
-          {% for doc in docs %}
-          <li class="document-item">
-            <div>
-              <strong>{{ doc.title }}</strong>
-              <!-- Show file extension as a badge, e.g. PDF, DOCX, PNG -->
-              {% if doc.ext %}
-                <span class="doc-badge">{{ doc.ext[1:]|upper }}</span>
-              {% endif %}
-              <br>
-              Uploaded by {{ doc.uploader }} at {{ doc.upload_display }}<br>
-              <a href="/uploads/{{ doc.folder }}/{{ doc.filename }}" target="_blank">View Document</a>
-            </div>
-            <div class="document-buttons">
-              <form action="/document/delete/{{ doc.get('doc_id') }}" method="POST"
-                    onsubmit="return confirm('Are you sure you want to delete this document?');">
-                <button class="btn" type="submit">Delete</button>
-              </form>
-            </div>
-          </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p>No documents found. You can add one from the "Add Document" tab.</p>
-      {% endif %}
-    </div>
-
-    <!-- Add Document tab content -->
-    <div id="upload-tab" class="tab-content">
-      <h2 class="subsection-title">Upload a New Document</h2>
-      <form action="/upload_page" method="post" enctype="multipart/form-data">
-        <div class="form-group">
-          <label for="document">Select Document:</label><br>
-          <input type="file" name="document" id="document" accept=".pdf,.txt,.docx,.xlsx,.png,.jpg,.jpeg" required/>
-        </div>
-        <button type="submit" class="btn" id="uploadBtn">Upload Document</button>
-      </form>
-    </div>
-
-    <!-- Wiki tab content -->
-    <div id="wiki-tab" class="tab-content">
-      <h2 class="subsection-title">Wiki Pages</h2>
-      {% if pages %}
-        {% set folder_groups = {} %}
-        {% for page in pages %}
-          {% set folder_val = page.folder if page.folder else "Uncategorized" %}
-          {% if folder_val not in folder_groups %}
-            {% set _ = folder_groups.update({folder_val: []}) %}
-          {% endif %}
-          {% set _ = folder_groups[folder_val].append(page) %}
-        {% endfor %}
-
-        {% for folder_val, group_pages in folder_groups.items() %}
-          {% set folder_id = folder_val|replace(' ', '_')|lower %}
-          <div class="folder-header" onclick="toggleFolder('{{folder_id}}')">
-            <span>{{ folder_val }}</span>
-            <span>▼</span>
+  <!-- Documents tab content -->
+  <div id="docs-tab" class="tab-content active">
+    <h2 class="subsection-title">Uploaded Documents</h2>
+    {% if docs %}
+      <ul>
+        {% for doc in docs %}
+        <li class="document-item">
+          <div>
+            <strong>{{ doc.title }}</strong>
+            {% if doc.ext %}
+              <span class="doc-badge">{{ doc.ext[1:]|upper }}</span>
+            {% endif %}
+            <br>
+            Uploaded by {{ doc.uploader }} at {{ doc.upload_display }}<br>
+            <a href="/uploads/{{ doc.folder }}/{{ doc.filename }}" target="_blank">View Document</a>
           </div>
-          <div id="{{folder_id}}" class="folder-content">
-            <ul>
-              {% for page in group_pages %}
-              <li class="wiki-item">
-                <div>
-                  <a href="/wiki/view/{{ page.id }}"><strong>{{ page.title }}</strong></a><br>
-                  Last updated: {{ page.updated_at }}
-                </div>
-                <div class="wiki-buttons">
-                  <form action="/wiki/delete/{{ page.id }}" method="POST"
-                        style="display:inline;"
-                        onsubmit="return confirm('Are you sure you want to delete this Wiki page?');">
-                    <button class="btn" type="submit">Delete</button>
-                  </form>
-                  <br>
-                  <a href="/wiki/edit/{{ page.id }}" class="btn" style="margin-top:6px;">Edit</a>
-                </div>
-              </li>
-              {% endfor %}
-            </ul>
+          <div class="document-buttons">
+            <form action="/document/delete/{{ doc.get('doc_id') }}" method="POST"
+                  onsubmit="return confirm('Are you sure you want to delete this document?');">
+              <button class="btn" type="submit">Delete</button>
+            </form>
           </div>
+        </li>
         {% endfor %}
-      {% else %}
-        <p>No wiki pages found. You can create one from the "New Wiki Page" tab.</p>
-      {% endif %}
-    </div>
+      </ul>
+    {% else %}
+      <p>No documents found. You can add one from the "Add Document" tab.</p>
+    {% endif %}
+  </div>
 
-    <!-- New Wiki Page tab content -->
-    <div id="wiki-new-tab" class="tab-content">
-      <h2 class="subsection-title">Create a New Wiki Page</h2>
-      <form action="/wiki/save" method="post">
-        <div class="form-group">
-          <label for="title">Title:</label>
-          <input type="text" name="title" id="title" required>
-        </div>
-        <div class="form-group">
-          <label for="folder">Folder / Topic (optional):</label>
-          <input type="text" name="folder" id="folder">
-        </div>
-        <div class="form-group">
-          <label for="content">Content (Markdown supported):</label>
-          <textarea name="content" id="content" style="width:100%; height:200px;" required></textarea>
-        </div>
-        <button type="submit" class="btn">Save Wiki Page</button>
-      </form>
-    </div>
+  <!-- Add Document tab content -->
+  <div id="upload-tab" class="tab-content">
+    <h2 class="subsection-title">Upload a New Document</h2>
+    <form action="/upload_page" method="post" enctype="multipart/form-data">
+      <div class="form-group">
+        <label for="document">Select Document:</label><br>
+        <input type="file" name="document" id="document" accept=".pdf,.txt,.docx,.xlsx,.png,.jpg,.jpeg" required/>
+      </div>
+      <button type="submit" class="btn" id="uploadBtn">Upload Document</button>
+    </form>
+  </div>
 
+  <!-- Wiki tab content -->
+  <div id="wiki-tab" class="tab-content">
+    <h2 class="subsection-title">Wiki Pages</h2>
+    {% if pages %}
+      {% set folder_groups = {} %}
+      {% for page in pages %}
+        {% set folder_val = page.folder if page.folder else "Uncategorized" %}
+        {% if folder_val not in folder_groups %}
+          {% set _ = folder_groups.update({folder_val: []}) %}
+        {% endif %}
+        {% set _ = folder_groups[folder_val].append(page) %}
+      {% endfor %}
+
+      {% for folder_val, group_pages in folder_groups.items() %}
+        {% set folder_id = folder_val|replace(' ', '_')|lower %}
+        <div class="folder-header" onclick="toggleFolder('{{folder_id}}')">
+          <span>{{ folder_val }}</span>
+          <span>▼</span>
+        </div>
+        <div id="{{folder_id}}" class="folder-content">
+          <ul>
+            {% for page in group_pages %}
+            <li class="wiki-item">
+              <div>
+                <a href="/wiki/view/{{ page.id }}"><strong>{{ page.title }}</strong></a><br>
+                Last updated: {{ page.updated_at }}
+              </div>
+              <div class="wiki-buttons">
+                <form action="/wiki/delete/{{ page.id }}" method="POST"
+                      style="display:inline;"
+                      onsubmit="return confirm('Are you sure you want to delete this Wiki page?');">
+                  <button class="btn" type="submit">Delete</button>
+                </form>
+                <br>
+                <a href="/wiki/edit/{{ page.id }}" class="btn" style="margin-top:6px;">Edit</a>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p>No wiki pages found. You can create one from the "New Wiki Page" tab.</p>
+    {% endif %}
+  </div>
+
+  <!-- New Wiki Page tab content -->
+  <div id="wiki-new-tab" class="tab-content">
+    <h2 class="subsection-title">Create a New Wiki Page</h2>
+    <form action="/wiki/save" method="post">
+      <div class="form-group">
+        <label for="title">Title:</label>
+        <input type="text" name="title" id="title" required>
+      </div>
+      <div class="form-group">
+        <label for="folder">Folder / Topic (optional):</label>
+        <input type="text" name="folder" id="folder">
+      </div>
+      <div class="form-group">
+        <label for="content">Content (Markdown supported):</label>
+        <textarea name="content" id="content" style="width:100%; height:200px;" required></textarea>
+      </div>
+      <button type="submit" class="btn">Save Wiki Page</button>
+    </form>
   </div>
 
   <script>
@@ -308,5 +151,4 @@
       }
     }
   </script>
-</body>
-</html>
+{% endblock %}

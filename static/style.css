@@ -43,7 +43,35 @@ header p {
     margin-bottom: 20px;
 }
 
-/* Form Inputs (improved for login/register) */
+/* Flash messages */
+.flashes {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 20px;
+}
+
+.flashes li {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+
+.flashes .success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.flashes .error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.flashes .info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+/* Forms & inputs */
 .form-group input[type="text"],
 .form-group input[type="password"] {
     width: 92%;
@@ -54,13 +82,13 @@ header p {
     margin-bottom: 15px;
 }
 
-/* Buttons - globally slightly smaller for login/register */
+/* Buttons */
 .btn {
     background-color: #10a37f;
     color: #ffffff;
     border: none;
-    padding: 8px 16px; /* reduced padding */
-    font-size: 0.95rem; /* slightly smaller font */
+    padding: 8px 16px;
+    font-size: 0.95rem;
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.2s ease;
@@ -118,21 +146,6 @@ header p {
     font-size: 1rem;
 }
 
-.btn {
-    background-color: #10a37f;
-    color: #ffffff;
-    border: none;
-    padding: 8px 16px;
-    font-size: 0.95rem;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.btn:hover {
-    background-color: #0e8c6c;
-}
-
 /* Documents Section */
 .documents-section ul {
     list-style: none;
@@ -152,33 +165,6 @@ header p {
     text-decoration: underline;
 }
 
-/* Flashes */
-.flashes {
-    list-style: none;
-    padding: 0;
-}
-
-.flashes li {
-    padding: 10px;
-    margin-bottom: 10px;
-    border-radius: 4px;
-}
-
-.flashes .success {
-    background-color: #d4edda;
-    color: #155724;
-}
-
-.flashes .error {
-    background-color: #f8d7da;
-    color: #721c24;
-}
-
-.flashes .info {
-    background-color: #d1ecf1;
-    color: #0c5460;
-}
-
 /* Error Section */
 .error-section {
     background-color: #f8d7da;
@@ -194,3 +180,98 @@ hr {
     border-top: 1px solid #e5e7eb;
     margin: 40px 0;
 }
+
+/* Tabbed Interface (Knowledge page) */
+.tab-container {
+    display: flex;
+    border-bottom: 2px solid #ccc;
+    margin-bottom: 20px;
+}
+
+.tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    background-color: #f1f5f9;
+    border: 1px solid #d1d5db;
+    border-bottom: none;
+    margin-right: 2px;
+    border-radius: 8px 8px 0 0;
+}
+
+.tab.active {
+    background-color: white;
+    border-bottom: 2px solid white;
+    font-weight: bold;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    padding: 20px;
+    border-radius: 0 8px 8px 8px;
+}
+
+.folder-header {
+    cursor: pointer;
+    background-color: #e8f5f2;
+    padding: 10px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    font-weight: bold;
+    color: #0e8c6c;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.folder-content {
+    display: none;
+    margin-left: 20px;
+    margin-bottom: 20px;
+}
+
+.wiki-item {
+    margin-bottom: 10px;
+    border-left: 3px solid #10a37f;
+    padding-left: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.wiki-buttons {
+    text-align: right;
+    margin-left: 10px;
+}
+
+.document-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.document-buttons {
+    margin-left: 10px;
+    text-align: right;
+}
+
+input[type="file"] {
+    display: inline-block;
+    cursor: pointer;
+    padding: 8px;
+    border: 2px dashed #10a37f;
+    background-color: #f1f5f9;
+    border-radius: 6px;
+    margin-bottom: 15px;
+}
+
+input[type="file"]:hover {
+    background-color: #e7f3f0;
+}
+
+/* Tag/badge sty

@@ -1,40 +1,22 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TheFulcrum's Chat</title>
-  <link rel="icon" type="image/png" href="/static/mini-log.png" />
-  <link rel="stylesheet" href="/static/style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
-</head>
-<body>
-  <div class="container">
-    <header>
-      <img src="/static/logo.png" alt="Logo" class="logo" />
-      <h1>TheFulcrum's Chat</h1>
-      <nav>
-        <a href="/">Chat</a> |
-        <a href="/knowledge">Knowledge</a> |
-        <a href="/logout">Logout</a>
-      </nav>
-      <p>Your interactive retrieval-augmented assistant for Fulcrum Asset Management.</p>
-      <!-- Removed debug toggle button -->
-      <button class="btn" onclick="restartChat()">Restart Chat</button>
-    </header>
-    <section class="chat-section">
-      <div id="conversation" class="conversation" style="display:none;"></div>
-      <div id="empty-placeholder" style="text-align:center; color:#555; font-style:italic; margin-bottom:30px;">
-        What can I help you with?
-      </div>
-      <div class="chat-input">
-        <input id="question" type="text" placeholder="Type your message..." />
-        <button type="button" onclick="askQuestion()" class="btn">Send</button>
-        <!-- The "Source" button remains, but no debug toggle -->
-        <button type="button" onclick="showSources()" class="btn">Source</button>
-      </div>
-    </section>
-  </div>
+{% extends "base.html" %}
+
+{% block title %}Home - TheFulcrum's Chat{% endblock %}
+
+{% block content %}
+  <section class="chat-section">
+    <button class="btn" onclick="restartChat()" style="margin-bottom: 10px;">Restart Chat</button>
+
+    <div id="conversation" class="conversation" style="display:none;"></div>
+    <div id="empty-placeholder" style="text-align:center; color:#555; font-style:italic; margin-bottom:30px;">
+      What can I help you with?
+    </div>
+    <div class="chat-input">
+      <input id="question" type="text" placeholder="Type your message..." />
+      <button type="button" onclick="askQuestion()" class="btn">Send</button>
+      <button type="button" onclick="showSources()" class="btn">Source</button>
+    </div>
+  </section>
+
   <script>
     const conversationDiv = document.getElementById("conversation");
     const placeholderDiv = document.getElementById("empty-placeholder");
@@ -59,7 +41,6 @@
         conversationDiv.style.display = "none";
         placeholderDiv.style.display = "block";
       }
-      // Always scroll to bottom after rendering
       conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
     renderConversation();
@@ -88,18 +69,16 @@
         });
         const data = await response.json();
         const answerText = data.answer || "Error: No answer received.";
-        // Replace typing indicator with final answer
         conversation[conversation.length - 1] = {sender: "bot", text: answerText};
         renderConversation();
         localStorage.setItem("conversation", JSON.stringify(conversation));
       } catch (err) {
-        // Show error
         conversation[conversation.length - 1] = {sender: "bot", text: "Error contacting the server."};
         renderConversation();
       }
     }
 
-    // Also send on Enter
+    // Send on Enter
     const questionInput = document.getElementById("question");
     questionInput.addEventListener("keydown", function(event) {
       if (event.key === "Enter") {
@@ -120,5 +99,4 @@
       window.location.href = "/sources";
     }
   </script>
-</body>
-</html>
+{% endblock %}

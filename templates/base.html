@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}TheFulcrum's Chat{% endblock %}</title>
+  <link rel="icon" type="image/png" href="/static/mini-log.png" />
+  <link rel="stylesheet" href="/static/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <img src="/static/logo.png" alt="Logo" class="logo" />
+      <h1>TheFulcrum's Chat</h1>
+      <nav>
+        <a href="/">Chat</a> |
+        <a href="/knowledge">Knowledge</a> |
+        <a href="/logout">Logout</a>
+      </nav>
+      <p>Your interactive retrieval-augmented assistant for Fulcrum Asset Management.</p>
+    </header>
+
+    <!-- Include a partial to show any flash messages -->
+    {% include "flash_messages.html" %}
+
+    <section>
+      {% block content %}{% endblock %}
+    </section>
+  </div>
+</body>
+</html>
