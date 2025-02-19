@@ -15,7 +15,7 @@ wiki_bp = Blueprint('wiki', __name__)
 def get_all_wiki_pages():
     with sqlite3.connect(WIKI_DB) as conn:
         cur = conn.cursor()
-        cur.execute("SELECT id, title, folder, updated_at FROM wiki ORDER BY updated_at DESC")
+        cur.execute("SELECT id, title, folder, updated_at, last_edited_by FROM wiki ORDER BY updated_at DESC")
         rows = cur.fetchall()
         pages = []
         for row in rows:
@@ -23,14 +23,15 @@ def get_all_wiki_pages():
                 "id": row[0],
                 "title": row[1],
                 "folder": row[2],
-                "updated_at": row[3]
+                "updated_at": row[3],
+                "last_edited_by": row[4]
             })
     return pages
 
 def get_wiki_page(page_id):
     with sqlite3.connect(WIKI_DB) as conn:
         cur = conn.cursor()
-        cur.execute("SELECT id, title, content, folder, updated_at FROM wiki WHERE id = ?", (page_id,))
+        cur.execute("SELECT id, title, content, folder, updated_at, last_edited_by FROM wiki WHERE id = ?", (page_id,))
         row = cur.fetchone()
         if row:
             return {
@@ -38,25 +39,27 @@ def get_wiki_page(page_id):
                 "title": row[1],
                 "content": row[2],
                 "folder": row[3],
-                "updated_at": row[4]
+                "updated_at": row[4],
+                "last_edited_by": row[5]
             }
     return None
 
 def save_wiki_page(title, content, folder, page_id=None):
     now = datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M")
+    editor = session.get("user", "unknown")
     with sqlite3.connect(WIKI_DB) as conn:
         cur = conn.cursor()
         if page_id:
             cur.execute(
-                "UPDATE wiki SET title = ?, content = ?, folder = ?, updated_at = ? WHERE id = ?",
-                (title, content, folder, now, page_id)
+                "UPDATE wiki SET title = ?, content = ?, folder = ?, updated_at = ?, last_edited_by = ? WHERE id = ?",
+                (title, content, folder, now, editor, page_id)
             )
             conn.commit()
             return page_id
         else:
             cur.execute(
-                "INSERT INTO wiki (title, content, folder, updated_at) VALUES (?, ?, ?, ?)",
-                (title, content, folder, now)
+                "INSERT INTO wiki (title, content, folder, updated_at, last_edited_by) VALUES (?, ?, ?, ?, ?)",
+                (title, content, folder, now, editor)
             )
             conn.commit()
             return cur.lastrowid
@@ -68,7 +71,6 @@ def embed_wiki_page(wiki_id, title, content):
         collection.delete(ids=[embedding_id])
     except Exception as e:
         print(f"Warning: could not delete existing wiki embedding: {e}")
-    # Store the wiki_id in metadata so that later we can reference the correct wiki page.
     metadata = {"type": "wiki", "title": title, "wiki_id": wiki_id}
     collection.add(
         documents=[content],

@@ -48,6 +48,9 @@ header p {
     list-style: none;
     padding: 0;
     margin-bottom: 20px;
+    max-width: 600px; /* Make the flash messages box less wide */
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .flashes li {
@@ -87,11 +90,12 @@ header p {
     background-color: #10a37f;
     color: #ffffff;
     border: none;
-    padding: 8px 16px;
+    padding: 10px 16px; /* slightly taller for less squished appearance */
     font-size: 0.95rem;
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.2s ease;
+    margin: 4px 0;
 }
 
 .btn:hover {
@@ -274,4 +278,106 @@ input[type="file"]:hover {
     background-color: #e7f3f0;
 }
 
-/* Tag/badge sty
+/* Tag/badge styling for doc types */
+.doc-badge {
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 6px;
+    color: #ffffff;
+    background-color: #999;
+}
+
+.doc-badge:before {
+    content: "[";
+    margin-right: 2px;
+}
+.doc-badge:after {
+    content: "]";
+    margin-left: 2px;
+}
+
+.doc-badge[data-ext="PDF"] {
+    background-color: #e74c3c; /* subtle red */
+}
+.doc-badge[data-ext="DOCX"] {
+    background-color: #2980b9; /* subtle blue */
+}
+.doc-badge[data-ext="TXT"] {
+    background-color: #95a5a6; /* gray */
+}
+.doc-badge[data-ext="PNG"],
+.doc-badge[data-ext="JPG"],
+.doc-badge[data-ext="JPEG"] {
+    background-color: #16a085; /* greenish teal */
+}
+.doc-badge[data-ext="XLSX"] {
+    background-color: #27ae60; /* green */
+}
+.doc-badge[data-ext="PPTX"] {
+    background-color: #d35400; /* orange */
+}
+
+/* Sources Page */
+.chat-box {
+    background-color: #fff;
+    border: 1px solid #d1d5db;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.source-item {
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+.source-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.source-title {
+    font-size: 1rem;
+    margin: 0;
+    color: #333;
+}
+
+.similarity-coefficient {
+    font-size: 0.85rem;
+    background-color: #f1f1f1;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.filter-controls {
+    margin: 15px 0;
+}
+
+.wiki-preview {
+    background-color: #f3f3f3;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    margin-bottom: 10px;
+    color: #555;
+}
+
+.source-footer {
+    text-align: right;
+}
+
+.view-link {
+    color: #4a7d95; /* A softer, less bright color */
+    text-decoration: none;
+}
+
+.view-link:hover {
+    text-decoration: underline;
+}

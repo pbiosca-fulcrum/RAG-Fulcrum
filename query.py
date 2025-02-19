@@ -37,6 +37,9 @@ def generate_answer(question: str):
 
     # If no results or empty
     if not results.get("documents") or not results["documents"] or not results["documents"][0]:
+        session["last_query"] = question
+        session["last_sources"] = []
+        session["last_answer"] = "I don't have that information at this time."
         return "I don't have that information at this time."
 
     docs = results["documents"][0]
@@ -99,7 +102,7 @@ def generate_answer(question: str):
         # Append text for final context
         context_text += doc_text + "\n\n"
 
-    # Store the query and the sources in session so /sources can display them
+    # Store the query and the sources in session
     session["last_query"] = question
     session["last_sources"] = unique_sources
 
@@ -122,5 +125,8 @@ def generate_answer(question: str):
         temperature=0.0
     )
     final_answer = response.choices[0].message.content.strip()
+
+    # Store the last answer in session
+    session["last_answer"] = final_answer
 
     return final_answer

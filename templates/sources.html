@@ -3,50 +3,88 @@
 {% block title %}Source Documents - TheFulcrum's Chat{% endblock %}
 
 {% block content %}
-  {% if last_query %}
-    <p style="font-weight:bold;">These are the documents used to construct your latest query:</p>
-    <p style="margin-bottom:25px;">"{{ last_query }}"</p>
-  {% else %}
-    <p>No record of your last query was found.</p>
-  {% endif %}
 
-  {% if sources %}
-    {% for source in sources %}
-      <div class="source-item">
-        <h2>{{ source.title }}</h2>
-
-        {# Uncomment if you want to show Relevance Score #}
-        {# 
-        <div class="relevance-section">
-          Relevance Score:
-          <span class="similarity-score"
-                style="color:{% if source.score >= 80 %}green{% elif source.score >= 60 %}darkorange{% elif source.score >= 40 %}#e38f19{% elif source.score >= 20 %}#cc4141{% else %}red{% endif %};">
-            {{ source.score }}%
-          </span>
-        </div>
-        #}
-
-        {% if source.type == "document" %}
-          <p>
-            <a href="{{ source.link }}" target="_blank">View Original Document</a>
-          </p>
-        {% elif source.type == "wiki" %}
-          <p>
-            <a href="{{ source.view_link }}" target="_blank">View Wiki Page</a>
-            {% if source.edit_link %}
-              | <a href="{{ source.edit_link }}" target="_blank">Edit Wiki Page</a>
-            {% endif %}
-          </p>
-          <h3>Preview (first 500 characters):</h3>
-          <div class="source-content">
-            {{ source.full_text }}
-          </div>
-        {% endif %}
+{% if last_query or session['last_answer'] %}
+  <div class="chat-box">
+    {% if last_query %}
+      <div class="message user-message">
+        <strong>You:</strong> {{ last_query }}
       </div>
-    {% endfor %}
-  {% else %}
-    <p>No source documents available.</p>
-  {% endif %}
+    {% endif %}
+    {% if session['last_answer'] %}
+      <div class="message bot-message">
+        <strong>TheFulcrum's Chat:</strong> {{ session['last_answer'] }}
+      </div>
+    {% endif %}
+  </div>
+  <hr>
+{% else %}
+  <p>No record of your last query was found.</p>
+{% endif %}
 
-  <p><a href="/" class="btn">Back to Chat</a></p>
+{% if sources %}
+  <div class="filter-controls">
+    <label for="similarityFilter"><strong>Minimum Similarity:</strong></label>
+    <input type="range" id="similarityFilter" min="0" max="100" value="0" oninput="updateFilterLabel(this.value)" />
+    <span id="filterValue">0</span>%
+    <button class="btn" onclick="applyFilter()">Apply Filter</button>
+  </div>
+
+  {% for source in sources %}
+    <div class="source-item" data-score="{{ source.score }}">
+      <div class="source-header">
+        <h4 class="source-title">{{ source.title }}</h4>
+        <div class="similarity-coefficient">
+          Similarity: {{ source.score }}%
+        </div>
+      </div>
+
+      {% if source.type == "document" %}
+        <!-- No textual preview, just the link at bottom -->
+        <div class="source-footer">
+          <a href="{{ source.link }}" target="_blank" class="view-link">View Original Document</a>
+        </div>
+
+      {% elif source.type == "wiki" %}
+        <div class="wiki-preview">
+          {{ source.full_text }}
+        </div>
+        <div class="source-footer">
+          {% if source.view_link %}
+            <a href="{{ source.view_link }}" target="_blank" class="view-link">View Wiki Page</a>
+          {% endif %}
+          {% if source.edit_link %}
+            <span style="margin: 0 10px;">|</span>
+            <a href="{{ source.edit_link }}" target="_blank" class="view-link">Edit Wiki Page</a>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  {% endfor %}
+
+{% else %}
+  <p>No source documents available.</p>
+{% endif %}
+
+<p><a href="/" class="btn" style="margin-top: 15px;">Back to Chat</a></p>
+
+<script>
+  function updateFilterLabel(value) {
+    document.getElementById("filterValue").textContent = value;
+  }
+
+  function applyFilter() {
+    const threshold = parseInt(document.getElementById("similarityFilter").value);
+    const items = document.querySelectorAll(".source-item");
+    items.forEach(item => {
+      const score = parseInt(item.getAttribute("data-score"));
+      if (score >= threshold) {
+        item.style.display = "block";
+      } else {
+        item.style.display = "none";
+      }
+    });
+  }
+</script>
+
 {% endblock %}

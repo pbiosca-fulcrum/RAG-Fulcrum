@@ -25,7 +25,8 @@
           <div>
             <strong>{{ doc.title }}</strong>
             {% if doc.ext %}
-              <span class="doc-badge">{{ doc.ext[1:]|upper }}</span>
+              <!-- Data attribute for extension so we can color-code in CSS -->
+              <span class="doc-badge" data-ext="{{ doc.ext[1:]|upper }}">{{ doc.ext[1:]|upper }}</span>
             {% endif %}
             <br>
             Uploaded by {{ doc.uploader }} at {{ doc.upload_display }}<br>
@@ -83,6 +84,9 @@
               <div>
                 <a href="/wiki/view/{{ page.id }}"><strong>{{ page.title }}</strong></a><br>
                 Last updated: {{ page.updated_at }}
+                {% if page.last_edited_by %}
+                  <br>Last edited by: {{ page.last_edited_by }}
+                {% endif %}
               </div>
               <div class="wiki-buttons">
                 <form action="/wiki/delete/{{ page.id }}" method="POST"

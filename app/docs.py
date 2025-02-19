@@ -1,9 +1,7 @@
-# app/docs.py
 import os
 import uuid
 import datetime
 import json
-import threading
 import sqlite3
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory, session
 from chunk_and_embed import chunk_and_embed_file, generate_document_title
@@ -33,14 +31,14 @@ def remove_metadata(doc_id):
     with open(METADATA_FILE, "w") as f:
         json.dump(updated_data, f, indent=2)
 
-def process_document(new_file_path, doc_id, extra_metadata):
-    try:
-        chunk_and_embed_file(new_file_path, doc_id, extra_metadata=extra_metadata)
-        extra_metadata["doc_id"] = doc_id
-        update_metadata(extra_metadata)
-        print(f"[{datetime.datetime.utcnow().isoformat()}] Document '{extra_metadata['title']}' processed.")
-    except Exception as e:
-        print(f"[{datetime.datetime.utcnow().isoformat()}] Error processing document '{extra_metadata.get('title', 'Unknown')}': {e}")
+def process_document(file_path, doc_id, extra_metadata):
+    """
+    Previously run in a separate thread, but now done inline
+    so we can flash a message when it's truly finished.
+    """
+    chunk_and_embed_file(file_path, doc_id, extra_metadata=extra_metadata)
+    extra_metadata["doc_id"] = doc_id
+    update_metadata(extra_metadata)
 
 @docs_bp.route("/upload_page", methods=["GET", "POST"])
 def upload_page():
@@ -51,6 +49,7 @@ def upload_page():
         if not file:
             flash("No file uploaded.", "error")
             return redirect(url_for("main.knowledge"))
+
         now = datetime.datetime.utcnow()
         relative_folder = os.path.join(now.strftime("%Y"), now.strftime("%m"))
         folder = os.path.join(UPLOAD_FOLDER, relative_folder)
@@ -85,8 +84,15 @@ def upload_page():
             "filename": new_filename,
             "ext": ext
         }
-        flash(f"Your document '{title}' has been uploaded and is being processed. Please wait...", "info")
-        threading.Thread(target=process_document, args=(new_file_path, doc_id, extra_metadata)).start()
+
+        try:
+            # Process synchronously so we know it's fully done
+            process_document(new_file_path, doc_id, extra_metadata)
+            flash(f"Document '{title}' has finished uploading and embedding!", "success")
+        except Exception as e:
+            flash(f"Error processing document: {str(e)}", "error")
+
+        # Move the user directly to the Documents tab in Knowledge
         return redirect(url_for("main.knowledge"))
     return render_template("upload.html")
 

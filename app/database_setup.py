@@ -21,7 +21,8 @@ def init_user_db():
 
 def init_wiki_db():
     """
-    Creates the 'wiki' table in wiki.db if it does not exist.
+    Creates the 'wiki' table in wiki.db if it does not exist,
+    and adds a 'last_edited_by' column if missing.
     """
     with sqlite3.connect(WIKI_DB) as conn:
         cur = conn.cursor()
@@ -34,4 +35,10 @@ def init_wiki_db():
                 updated_at TEXT NOT NULL
             )
         """)
+        # Attempt to add 'last_edited_by' column if it doesn't exist.
+        try:
+            cur.execute("ALTER TABLE wiki ADD COLUMN last_edited_by TEXT")
+        except:
+            pass
+
         conn.commit()
