@@ -1,11 +1,20 @@
 from openai import OpenAI
 from database import collection
 from config import OPENAI_API_KEY, CHAT_MODEL, TOP_K
-from flask import session  # Added to store sources
+from flask import session  # To store sources
+import tiktoken  # Added for tokenization
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 DISALLOWED_KEYWORDS = ["salary", "salaries", "wage", "wages", "private HR"]
+
+encoder = tiktoken.get_encoding("cl100k_base")
+
+def truncate_to_8100_tokens(text: str) -> str:
+    tokens = encoder.encode(text)
+    if len(tokens) > 8100:
+        tokens = tokens[:8100]
+    return encoder.decode(tokens)
 
 def is_disallowed_query(query: str) -> bool:
     query_lc = query.lower()
@@ -15,19 +24,24 @@ def is_disallowed_query(query: str) -> bool:
     return False
 
 def generate_answer(question: str, debug: bool = False):
+    # Truncate the user question to prevent overly large input
+    question = truncate_to_8100_tokens(question)
+
     if is_disallowed_query(question):
-        return "I’m sorry, but I cannot answer that." if not debug else ("I’m sorry, but I cannot answer that.", "")
+        if debug:
+            return ("I’m sorry, but I cannot answer that.", "")
+        else:
+            return "I’m sorry, but I cannot answer that."
 
     results = collection.query(
         query_texts=[question],
         n_results=TOP_K
     )
 
-    # If no results found or empty (safety check)
+    # If no results found or empty
     if not results["documents"] or not results["documents"][0]:
         no_context_answer = (
-            "I don't have that information. You can ask me about the documents I have access to, "
-            "such as those related to Fulcrum Asset Management."
+            "I don't have that information at this time."
         )
         return (no_context_answer, "") if debug else no_context_answer
 
@@ -49,6 +63,8 @@ def generate_answer(question: str, debug: bool = False):
             filename = meta.get("filename")
             link = f"/uploads/{folder}/{filename}" if folder and filename else "No file link"
             source = {"type": "document", "doc_id": doc_id, "title": title, "folder": folder, "filename": filename, "link": link}
+
+        # Avoid duplicates
         if meta.get("type") == "wiki":
             if not any(s.get("wiki_id") == source.get("wiki_id") for s in unique_sources):
                 unique_sources.append(source)
@@ -56,17 +72,19 @@ def generate_answer(question: str, debug: bool = False):
             if not any(s.get("doc_id") == source.get("doc_id") for s in unique_sources):
                 unique_sources.append(source)
 
-        context_text += f"Snippet {i+1} from '{title}' ({link}):\n{doc_text}\n\n"
+        context_text += f"{doc_text}\n\n"
 
-    if not context_text.strip():
-        context_text = "No document context available."
+    # Truncate the context to 8100 tokens as well
+    context_text = truncate_to_8100_tokens(context_text)
 
+    # Revised system prompt to remove mention of "snippets"
     system_prompt = (
         "You are TheFulcrum's Chat, a helpful assistant for Fulcrum Asset Management. "
-        "Answer questions based on the provided document snippets. "
-        "If you do not have sufficient context, say: "
-        "'I don't have that information. You can ask me about the documents I have access to, such as those related to Fulcrum Asset Management.'"
+        "Provide the best possible answer. "
+        "If you do not have sufficient context, respond: "
+        "'I don't have that information at this time.'"
     )
+
     user_prompt = f"Question: {question}\n\nContext:\n{context_text}\n\nAnswer:"
 
     response = client.chat.completions.create(
@@ -79,7 +97,7 @@ def generate_answer(question: str, debug: bool = False):
     )
     final_answer = response.choices[0].message.content.strip()
 
-    # Store the unique sources for later retrieval via the "Source" button.
+    # Store sources for the "Source" button
     session['last_sources'] = unique_sources
 
     if debug:

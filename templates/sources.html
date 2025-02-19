@@ -6,6 +6,17 @@
   <title>Source Documents - TheFulcrum's Chat</title>
   <link rel="stylesheet" href="/static/style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    .source-content {
+      font-family: "Inter", sans-serif;
+      font-size: 1rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      background: #f7f7f8;
+      padding: 10px;
+      border-radius: 4px;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -27,12 +38,13 @@
               <p><a href="{{ source.view_link }}" target="_blank">View Original Document</a></p>
             {% elif source.type == "wiki" %}
               <p>
-                <a href="{{ source.view_link }}" target="_blank">View Wiki Page</a> | 
+                <a href="{{ source.view_link }}" target="_blank">View Wiki Page</a> |
                 <a href="{{ source.edit_link }}" target="_blank">Edit Wiki Page</a>
               </p>
             {% endif %}
             <h3>Full Content:</h3>
-            <pre style="white-space: pre-wrap; background: #f7f7f8; padding: 10px; border-radius: 4px;">{{ source.full_text }}</pre>
+            <!-- Use a class for styling instead of inline -->
+            <pre class="source-content">{{ source.full_text }}</pre>
           </div>
         {% endfor %}
       {% else %}

@@ -1,6 +1,7 @@
 import os
 import uuid
 from typing import List
+import datetime
 from openai import OpenAI
 from unstructured.partition.pdf import partition_pdf
 from unstructured.partition.docx import partition_docx
@@ -9,11 +10,20 @@ from unstructured.partition.xlsx import partition_xlsx
 import base64
 from PIL import Image
 import io
+import tiktoken  # For tokenization
 
 from database import collection
 from config import OPENAI_API_KEY, EMBEDDINGS_MODEL, CHAT_MODEL
 
 client = OpenAI(api_key=OPENAI_API_KEY)
+
+encoder = tiktoken.get_encoding("cl100k_base")
+
+def truncate_to_8100_tokens(text: str) -> str:
+    tokens = encoder.encode(text)
+    if len(tokens) > 8100:
+        tokens = tokens[:8100]
+    return encoder.decode(tokens)
 
 def extract_image_base64(file_path: str) -> str:
     """Extracts image as reduced-resolution base64 to avoid huge tokens."""
@@ -69,8 +79,8 @@ def generate_document_title(file_path: str) -> str:
     elif ext == ".pdf":
         try:
             elements = partition_pdf(
-                file_path, 
-                infer_table_structure=True, 
+                file_path,
+                infer_table_structure=True,
                 strategy="hi_res",
                 max_characters=20000,
                 combine_text_under_n_chars=10000,
@@ -82,6 +92,7 @@ def generate_document_title(file_path: str) -> str:
                 if len(content) > 500:
                     break
         except Exception as e:
+            # Fallback to PyPDF2
             try:
                 from PyPDF2 import PdfReader
                 reader = PdfReader(file_path)
@@ -104,8 +115,10 @@ def generate_document_title(file_path: str) -> str:
                 content += " " + el.text
             if len(content) > 500:
                 break
+
     if not content:
         content = "Document"
+
     prompt = f"Generate a concise and appropriate title for the following document content:\n{content}\nTitle:"
     response = client.chat.completions.create(
         model=CHAT_MODEL,
@@ -125,7 +138,7 @@ def chunk_and_embed_file(file_path: str, doc_id: str, extra_metadata=None):
     if file_ext == ".pdf":
         try:
             elements = partition_pdf(
-                file_path, 
+                file_path,
                 infer_table_structure=True,
                 strategy="hi_res",
                 max_characters=20000,
@@ -133,6 +146,8 @@ def chunk_and_embed_file(file_path: str, doc_id: str, extra_metadata=None):
                 new_after_n_chars=16000
             )
         except Exception as e:
+            # Log fallback usage
+            print(f"[{datetime.datetime.utcnow().isoformat()}] FALLBACK triggered for PDF: unstructured partition failed with error: {e}")
             try:
                 from PyPDF2 import PdfReader
                 reader = PdfReader(file_path)
@@ -147,6 +162,7 @@ def chunk_and_embed_file(file_path: str, doc_id: str, extra_metadata=None):
                 elements = [DummyElement()]
             except Exception as e2:
                 raise Exception("Error processing PDF using both methods: " + str(e) + " | " + str(e2))
+
         for el in elements:
             if el.category == "Table":
                 summary = summarize_chunk(el.text, chunk_type="table")
@@ -197,13 +213,12 @@ def chunk_and_embed_file(file_path: str, doc_id: str, extra_metadata=None):
         preview = chunk[:200] + ("..." if len(chunk) > 200 else "")
         print(f"Chunk {i+1}: {preview}")
 
+    # Embed each chunk, truncating to 8100 tokens if needed
     for content in docs_to_embed:
         if not content.strip():
             continue
-        max_chars = 8192 * 4  # rough approximation
-        if len(content) > max_chars:
-            print(f"Truncating chunk content from {len(content)} to {max_chars} characters for embedding.")
-            content = content[:max_chars]
+        content = truncate_to_8100_tokens(content)
+
         vector = embed_text(content)
         chunk_id = str(uuid.uuid4())
         metadata = {"doc_id": doc_id, "chunk_id": chunk_id}

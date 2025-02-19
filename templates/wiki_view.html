@@ -11,6 +11,12 @@
       margin-top: 10px;
       color: #5c6773;
     }
+    /* Position the edit button at bottom-right with extra margin */
+    .edit-button-container {
+      text-align: right;
+      margin-top: 30px;
+      margin-right: 0;
+    }
   </style>
 </head>
 <body>
@@ -25,8 +31,9 @@
       </nav>
     </header>
     <section>
+      <!-- Use the pre-rendered HTML (Markdown) instead of raw content -->
       <article>
-        {{ page.content | safe }}
+        {{ page.content_html | safe }}
       </article>
       <div class="wiki-meta">
         {% if page.folder %}
@@ -34,7 +41,9 @@
         {% endif %}
         Last updated: {{ page.updated_at }}
       </div>
-      <a href="/wiki/edit/{{ page.id }}" class="btn" style="margin-top:20px;">Edit Wiki Page</a>
+      <div class="edit-button-container">
+        <a href="/wiki/edit/{{ page.id }}" class="btn">Edit Wiki Page</a>
+      </div>
     </section>
   </div>
 </body>

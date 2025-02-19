@@ -1,3 +1,4 @@
+# app/docs.py
 import os
 import uuid
 import datetime
@@ -54,22 +55,25 @@ def upload_page():
         relative_folder = os.path.join(now.strftime("%Y"), now.strftime("%m"))
         folder = os.path.join(UPLOAD_FOLDER, relative_folder)
         os.makedirs(folder, exist_ok=True)
+
         temp_filename = str(uuid.uuid4()) + "_" + file.filename
         temp_file_path = os.path.join(folder, temp_filename)
         file.save(temp_file_path)
+
         try:
             title = generate_document_title(temp_file_path)
         except Exception:
             title = file.filename
+
         import re
         sanitized_title = re.sub(r'[^a-zA-Z0-9_-]', '_', title)
         ext = os.path.splitext(file.filename)[1].lower()
         new_filename = sanitized_title + ext
         new_file_path = os.path.join(folder, new_filename)
         os.rename(temp_file_path, new_file_path)
+
         doc_id = str(uuid.uuid4())
         uploader = session.get("user", "unknown")
-        # Store the full ISO timestamp for sorting and a display version (hh:mm)
         upload_time = now.isoformat()
         upload_display = now.strftime("%H:%M")
         extra_metadata = {
@@ -102,9 +106,14 @@ def document_delete(doc_id):
         flash("Failed to delete document: " + str(e), "error")
         return redirect(url_for("main.knowledge"))
 
-@docs_bp.route("/uploads/<path:filename>")
+@docs_bp.route("/uploads/<path:filename>", methods=["GET"])
 def uploaded_file(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename)
+    """
+    Serve the uploaded file from the uploads folder, ensuring
+    that we handle the full subdirectory path.
+    """
+    absolute_path = os.path.join(os.getcwd(), UPLOAD_FOLDER)
+    return send_from_directory(absolute_path, filename)
 
 def get_all_documents():
     with open(METADATA_FILE, "r") as f:
@@ -113,7 +122,7 @@ def get_all_documents():
     docs = sorted(docs, key=lambda x: x.get("upload_time", ""), reverse=True)
     for doc in docs:
         ext = doc.get("ext", "")
-        # For PDFs and DOCX files, we only want to show a link.
+        # For PDFs and DOCX files, show a link in the UI
         if ext in [".pdf", ".docx"]:
             doc["display"] = "link"
         else:
