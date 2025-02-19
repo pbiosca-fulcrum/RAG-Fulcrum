@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Knowledge Base - TheFulcrum's Chat</title>
+  <link rel="icon" type="image/png" href="/static/mini-log.png" />
   <link rel="stylesheet" href="/static/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
@@ -40,7 +41,6 @@
     .subsection-title {
       margin-top: 0;
     }
-    /* Minimally refine lists */
     ul {
       list-style: none;
       padding: 0;
@@ -48,7 +48,6 @@
     ul li {
       margin-bottom: 10px;
     }
-    /* Folder grouping for Wiki toggles */
     .folder-header {
       cursor: pointer;
       background-color: #e8f5f2;
@@ -87,7 +86,7 @@
       margin-left: 10px;
       text-align: right;
     }
-    /* Make the file input more appealing */
+    /* File input styling */
     input[type="file"] {
       display: inline-block;
       cursor: pointer;
@@ -99,6 +98,39 @@
     }
     input[type="file"]:hover {
       background-color: #e7f3f0;
+    }
+    /* Tag/badge styling */
+    .doc-badge {
+      display: inline-block;
+      background-color: #10a37f;
+      color: #fff;
+      border-radius: 4px;
+      padding: 2px 6px;
+      margin-left: 6px;
+      font-size: 0.8rem;
+    }
+    /* Flash messages styling */
+    .flashes {
+      list-style: none;
+      padding: 0;
+      margin-bottom: 20px;
+    }
+    .flashes li {
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+    }
+    .flashes .success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .flashes .error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    .flashes .info {
+      background-color: #d1ecf1;
+      color: #0c5460;
     }
   </style>
 </head>
@@ -114,12 +146,22 @@
       </nav>
     </header>
 
+    <!-- Show flash messages here so the user sees the "uploaded" message -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes">
+          {% for category, message in messages %}
+            <li class="{{ category }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
     <p style="text-align:center; font-size:1.1rem; color:#555;">
-      This chat becomes more powerful with every new piece of knowledge you add. 
+      This chat becomes more powerful with every new piece of knowledge you add.
       Keep uploading documents or creating wiki pages to help it learn and serve you better!
     </p>
 
-    <!-- Tabs (new order: Documents, Add Document, Wiki Pages, New Wiki Page) -->
     <div class="tab-container">
       <div class="tab active" data-tab="docs-tab">Documents</div>
       <div class="tab" data-tab="upload-tab">Add Document</div>
@@ -135,12 +177,18 @@
           {% for doc in docs %}
           <li class="document-item">
             <div>
-              <strong>{{ doc.title }}</strong><br>
+              <strong>{{ doc.title }}</strong>
+              <!-- Show file extension as a badge, e.g. PDF, DOCX, PNG -->
+              {% if doc.ext %}
+                <span class="doc-badge">{{ doc.ext[1:]|upper }}</span>
+              {% endif %}
+              <br>
               Uploaded by {{ doc.uploader }} at {{ doc.upload_display }}<br>
               <a href="/uploads/{{ doc.folder }}/{{ doc.filename }}" target="_blank">View Document</a>
             </div>
             <div class="document-buttons">
-              <form action="/document/delete/{{ doc.get('doc_id') }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this document?');">
+              <form action="/document/delete/{{ doc.get('doc_id') }}" method="POST"
+                    onsubmit="return confirm('Are you sure you want to delete this document?');">
                 <button class="btn" type="submit">Delete</button>
               </form>
             </div>
@@ -177,7 +225,6 @@
           {% set _ = folder_groups[folder_val].append(page) %}
         {% endfor %}
 
-        <!-- Now display by folder, collapsible sections -->
         {% for folder_val, group_pages in folder_groups.items() %}
           {% set folder_id = folder_val|replace(' ', '_')|lower %}
           <div class="folder-header" onclick="toggleFolder('{{folder_id}}')">
@@ -193,7 +240,9 @@
                   Last updated: {{ page.updated_at }}
                 </div>
                 <div class="wiki-buttons">
-                  <form action="/wiki/delete/{{ page.id }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this Wiki page?');">
+                  <form action="/wiki/delete/{{ page.id }}" method="POST"
+                        style="display:inline;"
+                        onsubmit="return confirm('Are you sure you want to delete this Wiki page?');">
                     <button class="btn" type="submit">Delete</button>
                   </form>
                   <br>
@@ -217,14 +266,6 @@
           <label for="title">Title:</label>
           <input type="text" name="title" id="title" required>
         </div>
-        <!-- If 'all_folders' is passed in, show a dropdown or list of existing ones -->
-        {% if all_folders is defined and all_folders %}
-          <p>Existing categories (click to auto-fill): 
-            {% for f in all_folders %}
-              <button type="button" class="btn" style="margin:2px;" onclick="document.getElementById('folder').value='{{f}}'">{{f}}</button>
-            {% endfor %}
-          </p>
-        {% endif %}
         <div class="form-group">
           <label for="folder">Folder / Topic (optional):</label>
           <input type="text" name="folder" id="folder">
@@ -238,19 +279,17 @@
     </div>
 
   </div>
+
   <script>
-    // Simple tab switching logic
+    // Simple tab switching
     const tabs = document.querySelectorAll(".tab");
     const contents = document.querySelectorAll(".tab-content");
 
     tabs.forEach(tab => {
       tab.addEventListener("click", () => {
-        // Remove active class from all tabs
         tabs.forEach(t => t.classList.remove("active"));
-        // Hide all tab contents
         contents.forEach(c => c.classList.remove("active"));
 
-        // Activate the clicked tab
         tab.classList.add("active");
         const target = tab.getAttribute("data-tab");
         const content = document.getElementById(target);
@@ -260,7 +299,6 @@
       });
     });
 
-    // Collapsible wiki folder groups
     function toggleFolder(folderId) {
       const folderContent = document.getElementById(folderId);
       if (folderContent.style.display === "none" || folderContent.style.display === "") {

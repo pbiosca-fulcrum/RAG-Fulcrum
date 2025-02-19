@@ -1,8 +1,8 @@
 from openai import OpenAI
 from database import collection
 from config import OPENAI_API_KEY, CHAT_MODEL, TOP_K
-from flask import session  # To store sources
-import tiktoken  # Added for tokenization
+from flask import session  # To store sources and last query
+import tiktoken
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -23,68 +23,94 @@ def is_disallowed_query(query: str) -> bool:
             return True
     return False
 
-def generate_answer(question: str, debug: bool = False):
-    # Truncate the user question to prevent overly large input
+def generate_answer(question: str):
+    # Truncate the user question to avoid overly large input
     question = truncate_to_8100_tokens(question)
 
     if is_disallowed_query(question):
-        if debug:
-            return ("I’m sorry, but I cannot answer that.", "")
-        else:
-            return "I’m sorry, but I cannot answer that."
+        return "I’m sorry, but I cannot answer that."
 
     results = collection.query(
         query_texts=[question],
         n_results=TOP_K
     )
 
-    # If no results found or empty
-    if not results["documents"] or not results["documents"][0]:
-        no_context_answer = (
-            "I don't have that information at this time."
-        )
-        return (no_context_answer, "") if debug else no_context_answer
+    # If no results or empty
+    if not results.get("documents") or not results["documents"] or not results["documents"][0]:
+        return "I don't have that information at this time."
 
     docs = results["documents"][0]
-    metadatas = results["metadatas"][0]
+    metas = results["metadatas"][0]
+    distances = results["distances"][0]
+
+    # Combine them so we can sort by distance (ascending)
+    items = []
+    for doc_text, meta, dist in zip(docs, metas, distances):
+        items.append({"doc_text": doc_text, "meta": meta, "distance": dist})
+
+    # Sort by ascending distance => highest similarity first
+    items.sort(key=lambda x: x["distance"])
+
     context_text = ""
     unique_sources = []
 
-    for i, (doc_text, meta) in enumerate(zip(docs, metadatas)):
+    for item in items:
+        doc_text = item["doc_text"]
+        meta = item["meta"]
+        distance = item["distance"]
+        similarity_score = (1.0 - distance) * 100.0
+        if similarity_score < 0:
+            similarity_score = 0
+        if similarity_score > 100:
+            similarity_score = 100
+
+        # Identify type
         if meta.get("type") == "wiki":
             wiki_id = meta.get("wiki_id")
             title = meta.get("title", "Unknown")
-            source = {"type": "wiki", "wiki_id": wiki_id, "title": title}
-            link = f"/wiki/view/{wiki_id}"
+            source = {
+                "type": "wiki",
+                "wiki_id": wiki_id,
+                "title": title,
+                "score": round(similarity_score, 2)
+            }
+            # Avoid duplicates by wiki_id
+            if not any(s.get("wiki_id") == wiki_id for s in unique_sources):
+                unique_sources.append(source)
         else:
             doc_id = meta.get("doc_id")
             title = meta.get("title", "Unknown")
             folder = meta.get("folder")
             filename = meta.get("filename")
-            link = f"/uploads/{folder}/{filename}" if folder and filename else "No file link"
-            source = {"type": "document", "doc_id": doc_id, "title": title, "folder": folder, "filename": filename, "link": link}
-
-        # Avoid duplicates
-        if meta.get("type") == "wiki":
-            if not any(s.get("wiki_id") == source.get("wiki_id") for s in unique_sources):
+            link = f"/uploads/{folder}/{filename}" if (folder and filename) else "No file link"
+            source = {
+                "type": "document",
+                "doc_id": doc_id,
+                "title": title,
+                "folder": folder,
+                "filename": filename,
+                "link": link,
+                "score": round(similarity_score, 2)
+            }
+            # Avoid duplicates by doc_id
+            if not any(s.get("doc_id") == doc_id for s in unique_sources):
                 unique_sources.append(source)
-        else:
-            if not any(s.get("doc_id") == source.get("doc_id") for s in unique_sources):
-                unique_sources.append(source)
 
-        context_text += f"{doc_text}\n\n"
+        # Append text for final context
+        context_text += doc_text + "\n\n"
 
-    # Truncate the context to 8100 tokens as well
+    # Store the query and the sources in session so /sources can display them
+    session["last_query"] = question
+    session["last_sources"] = unique_sources
+
+    # Truncate context again to be safe
     context_text = truncate_to_8100_tokens(context_text)
 
-    # Revised system prompt to remove mention of "snippets"
     system_prompt = (
         "You are TheFulcrum's Chat, a helpful assistant for Fulcrum Asset Management. "
-        "Provide the best possible answer. "
-        "If you do not have sufficient context, respond: "
+        "Provide the best possible answer. If you do not have sufficient context, respond: "
         "'I don't have that information at this time.'"
     )
-
     user_prompt = f"Question: {question}\n\nContext:\n{context_text}\n\nAnswer:"
 
     response = client.chat.completions.create(
@@ -97,10 +123,4 @@ def generate_answer(question: str, debug: bool = False):
     )
     final_answer = response.choices[0].message.content.strip()
 
-    # Store sources for the "Source" button
-    session['last_sources'] = unique_sources
-
-    if debug:
-        return final_answer, context_text
-    else:
-        return final_answer
+    return final_answer

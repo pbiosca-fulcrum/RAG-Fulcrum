@@ -21,14 +21,10 @@ def query():
     data = request.json
     if not data or "question" not in data:
         return jsonify({"error": "No question provided"}), 400
+
     question = data["question"]
-    debug = data.get("debug", False)
-    if debug:
-        answer, debug_context = generate_answer(question, debug=True)
-        return jsonify({"answer": answer, "debug_context": debug_context})
-    else:
-        answer = generate_answer(question, debug=False)
-        return jsonify({"answer": answer})
+    answer = generate_answer(question)
+    return jsonify({"answer": answer})
 
 @main_bp.route("/restart_chroma", methods=["POST"])
 def restart_chroma():
@@ -48,7 +44,7 @@ def knowledge():
     docs = get_all_documents()
     pages = get_all_wiki_pages()
     return render_template("knowledge.html", docs=docs, pages=pages)
-
+    
 @main_bp.errorhandler(500)
 def internal_error(error):
     return render_template("error.html", error=error), 500

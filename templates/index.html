@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TheFulcrum's Chat</title>
+  <link rel="icon" type="image/png" href="/static/mini-log.png" />
   <link rel="stylesheet" href="/static/style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
 </head>
@@ -18,8 +19,8 @@
         <a href="/logout">Logout</a>
       </nav>
       <p>Your interactive retrieval-augmented assistant for Fulcrum Asset Management.</p>
+      <!-- Removed debug toggle button -->
       <button class="btn" onclick="restartChat()">Restart Chat</button>
-      <button class="btn" id="debugToggle" onclick="toggleChatDebug()">Chat Debug: Off</button>
     </header>
     <section class="chat-section">
       <div id="conversation" class="conversation" style="display:none;"></div>
@@ -29,7 +30,7 @@
       <div class="chat-input">
         <input id="question" type="text" placeholder="Type your message..." />
         <button type="button" onclick="askQuestion()" class="btn">Send</button>
-        <!-- Changed showSources to redirect in the same tab -->
+        <!-- The "Source" button remains, but no debug toggle -->
         <button type="button" onclick="showSources()" class="btn">Source</button>
       </div>
     </section>
@@ -38,14 +39,7 @@
     const conversationDiv = document.getElementById("conversation");
     const placeholderDiv = document.getElementById("empty-placeholder");
     let conversation = JSON.parse(localStorage.getItem("conversation") || "[]");
-    let chatDebug = localStorage.getItem("chat_debug") === "true";
-    const debugToggleButton = document.getElementById("debugToggle");
-    
-    function updateDebugButton() {
-      debugToggleButton.innerText = chatDebug ? "Chat Debug: On" : "Chat Debug: Off";
-    }
-    updateDebugButton();
-    
+
     function renderConversation() {
       conversationDiv.innerHTML = "";
       if (conversation.length > 0) {
@@ -65,9 +59,11 @@
         conversationDiv.style.display = "none";
         placeholderDiv.style.display = "block";
       }
+      // Always scroll to bottom after rendering
+      conversationDiv.scrollTop = conversationDiv.scrollHeight;
     }
     renderConversation();
-    
+
     async function askQuestion() {
       const questionInput = document.getElementById("question");
       const question = questionInput.value.trim();
@@ -78,31 +74,32 @@
       conversation.push({sender: "user", text: question});
       renderConversation();
       questionInput.value = "";
-      
-      // Show a "typing..." indicator
+
+      // "typing..." indicator
       const typingMessage = {sender: "bot", text: "typing..."};
       conversation.push(typingMessage);
       renderConversation();
-      
-      const response = await fetch("/query", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: question, debug: chatDebug }),
-      });
-      const data = await response.json();
-      const answerText = data.answer || "Error: No answer received.";
-      
-      // Replace typing indicator with final answer
-      conversation[conversation.length - 1] = {sender: "bot", text: answerText};
-      renderConversation();
-      localStorage.setItem("conversation", JSON.stringify(conversation));
-      conversationDiv.scrollTop = conversationDiv.scrollHeight;
-      
-      if (chatDebug && data.debug_context) {
-        console.log("Debug Context:\n" + data.debug_context);
+
+      try {
+        const response = await fetch("/query", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question: question }),
+        });
+        const data = await response.json();
+        const answerText = data.answer || "Error: No answer received.";
+        // Replace typing indicator with final answer
+        conversation[conversation.length - 1] = {sender: "bot", text: answerText};
+        renderConversation();
+        localStorage.setItem("conversation", JSON.stringify(conversation));
+      } catch (err) {
+        // Show error
+        conversation[conversation.length - 1] = {sender: "bot", text: "Error contacting the server."};
+        renderConversation();
       }
     }
-    
+
+    // Also send on Enter
     const questionInput = document.getElementById("question");
     questionInput.addEventListener("keydown", function(event) {
       if (event.key === "Enter") {
@@ -110,7 +107,7 @@
         askQuestion();
       }
     });
-    
+
     function restartChat() {
       if (confirm("Are you sure you want to restart the chat? This will clear the conversation history.")) {
         localStorage.removeItem("conversation");
@@ -118,16 +115,7 @@
         renderConversation();
       }
     }
-    
-    function toggleChatDebug() {
-      chatDebug = !chatDebug;
-      localStorage.setItem("chat_debug", chatDebug);
-      updateDebugButton();
-      alert("Chat debug mode is now " + (chatDebug ? "enabled" : "disabled") +
-            ". In debug mode, additional context information will be logged to the console.");
-    }
-    
-    // Modified showSources: now redirects the current tab to /sources
+
     function showSources() {
       window.location.href = "/sources";
     }

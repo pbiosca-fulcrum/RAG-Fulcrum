@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Add Document - TheFulcrum's Chat</title>
+  <link rel="icon" type="image/png" href="/static/mini-log.png" />
   <link rel="stylesheet" href="/static/style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <style>
-    /* Simple overlay for upload progress */
     #upload-overlay {
       display: none;
       position: fixed;
@@ -57,9 +57,7 @@
   <div id="upload-overlay">Upload in progress... Please wait.</div>
   <script>
     function showUploadProgress() {
-      // Disable the upload button to prevent multiple submissions
       document.getElementById("uploadBtn").disabled = true;
-      // Show the overlay message
       document.getElementById("upload-overlay").style.display = "block";
     }
   </script>

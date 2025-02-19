@@ -29,3 +29,5 @@ chroma_db/*
 uploads/*
 
 text.txt
+
+app/__pycache__/*
