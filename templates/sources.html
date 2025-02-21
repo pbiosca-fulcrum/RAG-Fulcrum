@@ -23,12 +23,12 @@
 {% endif %}
 
 {% if sources %}
-  <div class="filter-controls">
+  <!-- <div class="filter-controls">
     <label for="similarityFilter"><strong>Minimum Similarity:</strong></label>
     <input type="range" id="similarityFilter" min="0" max="100" value="0" oninput="updateFilterLabel(this.value)" />
     <span id="filterValue">0</span>%
     <button class="btn" onclick="applyFilter()">Apply Filter</button>
-  </div>
+  </div> -->
 
   {% for source in sources %}
     <div class="source-item" data-score="{{ source.score }}">

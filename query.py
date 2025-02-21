@@ -111,8 +111,9 @@ def generate_answer(question: str):
 
     system_prompt = (
         "You are TheFulcrum's Chat, a helpful assistant for Fulcrum Asset Management. "
-        "Provide the best possible answer. If you do not have sufficient context, respond: "
+        "Provide the best possible answer. If you feel like you really do not have sufficient context, respond: "
         "'I don't have that information at this time.'"
+        "If you think you have just a bit of information, you can respond with that without going to much in detail and at the end tell them to check the source button."
     )
     user_prompt = f"Question: {question}\n\nContext:\n{context_text}\n\nAnswer:"
 
